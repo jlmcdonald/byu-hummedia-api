@@ -1,0 +1,4 @@
+fedora/creds.py
+*.pyc
+*.log
+!.gitignore
