@@ -172,29 +172,7 @@ def Collection(pid=None):
 @app.route('/video/<pid>',methods=['GET','POST','PATCH','PUT','DELETE','OPTIONS'])
 @crossdomain(origin='*',headers=['origin','x-requested-with','accept','Content-Type'])
 def Video(pid=None):
-	if request.method=="POST":
-            if not pid:
-	    	pid=client.getNextPid("humvideo")
-	    (namespace,id) = pid.split(":")
-	    foxml = Foxml(id,namespace,owner=request.json["creator"])
-	    foxml.buildDublinCore(request.json)
-	    foxml.buildRdf("VideoCollectionModel","collection")
-	    if client.ingest(foxml.buildFoxml(),pid,request.json["title"]) == pid:
-		resp=jsonify({"success":True,"identifier":pid})
-	    else:
-		resp=jsonify({"success":False})
-	elif pid and request.method in ["PUT","PATCH"]:
-	    dc=client.getDataStream(pid,"DC")
-	    for att in ["title","description","coverage","creator"]:
-		if (att in request.json and request.method=="PATCH") or request.method=="PUT":
-		    dc.find(".//"+DC+att).text=request.json.get(att)
-	    if client.modifyDatastream(pid,"DC",etree.tostring(dc,pretty_print=True)):
-		resp=jsonify({"success":True,"identifier":pid})
-	    else:
-		resp=jsonify({"success":False})		
-	else:
-	    resp=BAD_REQUEST		
-    elif request.method=="GET":
+    if request.method=="GET":
 	client=FedoraClient(True,creds)
 	format = request.args.get("format","json")
 	filter = request.args.get("filter",None)
