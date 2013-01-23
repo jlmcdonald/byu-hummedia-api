@@ -7,8 +7,8 @@
         [<xsl:for-each select=".//object">
             {
             "identifier": "<xsl:apply-templates select="field[@name='PID']"/>",
-            "title": "<xsl:choose><xsl:when test="field[@name='TITLE_UNTOK']"><xsl:apply-templates select="field[@name='TITLE_UNTOK']"/></xsl:when><xsl:otherwise><xsl:apply-templates select="field[@name='dc:title'][last()]"/></xsl:otherwise></xsl:choose>",
-	    "uri":"https://zelda.byu.edu/api/v2/video/<xsl:apply-templates select="field[@name='PID']"/>"
+            "title": "<xsl:choose><xsl:when test="field[@name='TITLE_UNTOK']"><xsl:apply-templates select="field[@name='TITLE_UNTOK']"/></xsl:when><xsl:otherwise><xsl:apply-templates select="field[@name='dc.title'][last()]"/></xsl:otherwise></xsl:choose>",
+	    "uri":"%APIHOST%/video/<xsl:apply-templates select="field[@name='PID']"/>"
             }<xsl:if test="position()!=last()">,</xsl:if>
         </xsl:for-each>
          ]

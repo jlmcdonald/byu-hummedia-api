@@ -65,10 +65,12 @@ def xmlify(xmlstring):
 def list_jsonify(listobj):
     return Response(json.dumps(listobj),status=200,mimetype="application/json")
 
-def xslTransform(obj,style,nojson=False):
+def xslTransform(obj,style,nojson=False,params=[]):
     style=open(style_path+style)
     transform=etree.XSLT(etree.XML(style.read()))
     transformed_string=str(transform(obj))
+    for param in params:
+	transformed_string=transformed_string.replace(param['old'],param['new'])
     if nojson:
     	return transformed_string
     else:
@@ -194,7 +196,7 @@ def Video(pid=None):
 	    if format=="xml":
 		resp=xmlify(etree.tostring(r,pretty_print=True))
 	    elif format=="json":	
-		resp=list_jsonify(xslTransform(r,"gsearch2json.xsl"))
+		resp=list_jsonify(xslTransform(r,"gsearch2json.xsl",params=[{'old':'%APIHOST%','new':apihost}]))
 	    else:
 		resp=UNSUPPORTED_FORMAT		
 	elif pid:
