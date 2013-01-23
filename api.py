@@ -3,6 +3,7 @@ from lxml import etree
 from fedora.fedoraclient import FedoraClient
 from fedora.foxml import Foxml
 from fedora.creds import creds
+from fedora.config import *
 from services.namespaces import *
 from datetime import datetime, timedelta
 from flask import Flask, request, Response, jsonify, current_app
@@ -11,7 +12,6 @@ app = Flask(__name__)
 
 script_path = os.path.dirname(__file__)
 style_path = script_path+"/styles/"
-host="https://humvideo.byu.edu/api/v2"
 type_descs={"HumVideoMovingImage": "Video","EditedHumVideoMovingImage":"Video","HumTVMovingImage":"TV Recording","YTMovingImage":"Youtube Video","VimeoMovingImage":"Vimeo Video","MovingImage":"Other Video"}
 UNSUPPORTED_FORMAT=Response("That format is not currently supported.",status=400,mimetype="text/plain")
 NOT_FOUND=Response("That object could not be found.",status=404,mimetype="text/plain")
@@ -123,12 +123,12 @@ def Collection(pid=None):
 			elif format=="json":
 				collection=xslTransform(obj,"dc2json.xsl")
 				collection["videos"]=[]
-				collection["uri"]="%s/collection/%s" % (host,pid)
+				collection["uri"]="%s/collection/%s" % (apihost,pid)
 				kwargs['pid']=pid
 				videos=etree.fromstring(client.risearch(queries.mediaInCollection(**kwargs),'itql','text'))
 				for result in videos[1]:
 				    pid=result.findtext(".//"+SPARQL+"pid")
-				    video={"pid":pid,"uri":"%s/video/%s" % (host,pid)}
+				    video={"pid":pid,"uri":"%s/video/%s" % (apihost,pid)}
 				    if full==True:
 					details=client.getDataStream(pid,"DC")					
 					video=dict(video.items()+xslTransform(details,"dc2json.xsl").items())
@@ -147,7 +147,7 @@ def Collection(pid=None):
 		    packet={"count":0,"collections":[]}
 		    for result in collections[1]:
 			    pid=result.findtext(".//"+SPARQL+"pid")
-			    packet["collections"].append({"title":result.findtext(".//"+SPARQL+"title"),"identifier":pid,"uri":"%s/collection/%s" % (host,pid)})
+			    packet["collections"].append({"title":result.findtext(".//"+SPARQL+"title"),"identifier":pid,"uri":"%s/collection/%s" % (apihost,pid)})
 		    packet["count"]=len(packet["collections"])
 		    if not count:
 			resp=list_jsonify(packet['collections'])
@@ -195,7 +195,6 @@ def Video(pid=None):
 		resp=xmlify(etree.tostring(r,pretty_print=True))
 	    elif format=="json":	
 		resp=list_jsonify(xslTransform(r,"gsearch2json.xsl"))
-		#resp=Response(xslTransform(r,"gsearch2json.xsl",nojson=True))
 	    else:
 		resp=UNSUPPORTED_FORMAT		
 	elif pid:
@@ -205,7 +204,7 @@ def Video(pid=None):
 			resp=xmlify(etree.tostring(obj,pretty_print=True))
 		    elif format=="json":
 			video=xslTransform(obj,"dc2json.xsl")
-			video["uri"]="%s/video/%s" % (host,pid)
+			video["uri"]="%s/video/%s" % (apihost,pid)
 			video["type"]=type_descs[video["type"]]
 			resp=jsonify(video)
 		    else:
@@ -220,7 +219,7 @@ def Video(pid=None):
 		    packet={"count":0,"videos":[]}
 		    for result in videos[1]:
 			    pid=result.findtext(".//"+SPARQL+"pid")
-			    packet['videos'].append({"title":result.findtext(".//"+SPARQL+"title"),"identifier":pid,"uri":"%s/video/%s" % (host,pid)})
+			    packet['videos'].append({"title":result.findtext(".//"+SPARQL+"title"),"identifier":pid,"uri":"%s/video/%s" % (apihost,pid)})
 		    packet["count"]=len(packet["videos"])
 		    resp=jsonify(packet)
 	    else:
