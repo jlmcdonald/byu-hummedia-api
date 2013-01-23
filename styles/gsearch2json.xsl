@@ -6,9 +6,15 @@
     <xsl:template match="/">
         [<xsl:for-each select=".//object">
             {
-            "identifier": "<xsl:apply-templates select="field[@name='PID']"/>",
-            "title": "<xsl:choose><xsl:when test="field[@name='TITLE_UNTOK']"><xsl:apply-templates select="field[@name='TITLE_UNTOK']"/></xsl:when><xsl:otherwise><xsl:apply-templates select="field[@name='dc.title'][last()]"/></xsl:otherwise></xsl:choose>",
-	    "uri":"%APIHOST%/video/<xsl:apply-templates select="field[@name='PID']"/>"
+            "type": "<xsl:apply-templates select="field[@name='dc.type']"/>",
+            "description": "<xsl:apply-templates select="field[@name='dc.description']"/>",
+            "coverage": "<xsl:apply-templates select="field[@name='dc.coverage']"/>",
+            "date": "<xsl:apply-templates select="field[@name='dc.date']"/>",
+            "identifier": "<xsl:apply-templates select="field[@name='dc.identifier']"/>",
+            "subject": "<xsl:for-each select="field[@name='dc.subject']"><xsl:apply-templates select="."/><xsl:if test="position()!=last()">,</xsl:if></xsl:for-each>",
+            "language": [<xsl:for-each select="field[@name='dc.language']">"<xsl:apply-templates select="."/>"<xsl:if test="position()!=last()">,</xsl:if></xsl:for-each>],
+            "rights": "<xsl:apply-templates select="field[@name='dc.rights']"/>",
+            "title": "<xsl:apply-templates select="field[@name='dc.title']"/>"
             }<xsl:if test="position()!=last()">,</xsl:if>
         </xsl:for-each>
          ]
