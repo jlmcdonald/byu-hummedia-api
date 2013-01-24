@@ -40,6 +40,6 @@
     </xsl:template>
 
     <xsl:template match="span">
-	<xsl:value-of select="."/><xsl:if test="position()!=last()"><xsl:text> </xsl:text></xsl:if>
+	<xsl:if test="preceding-sibling::text()"><xsl:text> </xsl:text></xsl:if><xsl:value-of select="."/><xsl:if test="following-sibling::text()"><xsl:text> </xsl:text></xsl:if>
     </xsl:template>
 </xsl:stylesheet>
