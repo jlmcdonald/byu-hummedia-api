@@ -8,6 +8,7 @@ from services.namespaces import *
 from datetime import datetime, timedelta
 from flask import Flask, request, Response, jsonify, current_app
 from functools import update_wrapper
+from urllib import quote_plus
 app = Flask(__name__)
 
 script_path = os.path.dirname(__file__)
@@ -192,7 +193,7 @@ def Video(pid=None):
 		for p in params:
 		    if p.strip():
 			kwargs["query"].append(p)
-	    r=client.gSearch(" AND ".join(kwargs["query"]))
+	    r=client.gSearch(" AND ".join(kwargs["query"]).encode("utf-8"))
 	    if format=="xml":
 		resp=xmlify(etree.tostring(r,pretty_print=True))
 	    elif format=="json":	

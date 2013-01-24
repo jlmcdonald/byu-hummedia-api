@@ -11,7 +11,7 @@
             "coverage": "<xsl:apply-templates select="field[@name='dc.coverage']"/>",
             "date": "<xsl:apply-templates select="field[@name='dc.date']"/>",
             "identifier": "<xsl:apply-templates select="field[@name='dc.identifier']"/>",
-            "subject": "<xsl:for-each select="field[@name='dc.subject']"><xsl:apply-templates select="."/><xsl:if test="position()!=last()">,</xsl:if></xsl:for-each>",
+            "subject": [<xsl:for-each select="field[@name='dc.subject']">"<xsl:apply-templates select="."/>"<xsl:if test="position()!=last()">,</xsl:if></xsl:for-each>],
             "language": [<xsl:for-each select="field[@name='dc.language']">"<xsl:apply-templates select="."/>"<xsl:if test="position()!=last()">,</xsl:if></xsl:for-each>],
             "rights": "<xsl:apply-templates select="field[@name='dc.rights']"/>",
             "title": "<xsl:apply-templates select="field[@name='dc.title']"/>"
@@ -30,12 +30,16 @@
 </xsl:template>
 
     <xsl:template match="field">
+	<xsl:apply-templates/>
+    </xsl:template>
+
+    <xsl:template match="field/text()">
 	<xsl:call-template name="escape-quote">
 	<xsl:with-param name="string"><xsl:value-of select="normalize-space(.)"/></xsl:with-param>
 	</xsl:call-template>
     </xsl:template>
 
     <xsl:template match="span">
-	<xsl:value-of select="."/><xsl:text> </xsl:text>
+	<xsl:value-of select="."/><xsl:if test="position()!=last()"><xsl:text> </xsl:text></xsl:if>
     </xsl:template>
 </xsl:stylesheet>
