@@ -278,6 +278,12 @@ def Video(pid=None):
 			##(r'/video/(.*)/?',Video),
 			##(r'/playlist/(.*)/?',Playlist),
 
+@app.route('/language',methods=['GET'])
+@crossdomain(origin='*',headers=['origin','x-requested-with','accept','Content-Type'])
+def languages():
+    from langs import langs
+    return list_jsonify(langs)
+
 @app.route('/')
 def index():
-    return 'Humvideo Repo API'
+    return jsonify({"API":"Humvideo","Version":2})
