@@ -1,5 +1,4 @@
 *.pyc
 *.log
 !.gitignore
-fedora/
-services/
+import.py
