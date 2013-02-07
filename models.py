@@ -48,10 +48,10 @@ class AssetGroup(Document):
 	        "@graph.dc:date":datetime.datetime.utcnow(),        
 	}
 	
-	def resource_pattern(self,pid,apihost=""):
+	def uri_pattern(self,pid,apihost=""):
 	    return "%s/collection/%s" % (apihost,pid)
 
-	def type_pattern(self,type,apihost=""):
+	def resolve_type(self,type,apihost=""):
 	    return type.split("/")[-1]
 
 @connection.register
@@ -135,9 +135,17 @@ class Video(Document):
 	        "@graph.ma:frameSizeUnit":"px"
 	}
 	
-	def resource_pattern(self,pid,host=""):
+	def uri_pattern(self,pid,host=""):
 	    return "%s/video/%s" % (host,pid)
 
-	def type_pattern(self,thetype,apihost=""):
+	def resolve_pattern(self,thetype,apihost=""):
 	    return thetype.split("/")[-1]  
 
+	def make_part(self,vid,host,part):
+		resource=self.uri_pattern(vid["pid"],host)
+		thepart={"ma:title":vid["ma:title"],"pid":vid["pid"],"resource":resource}
+		if part!="snippet":
+			thepart["ma:date"]=vid["ma:date"]
+			thepart["ma:description"]=vid["ma:description"]
+			thepart["ma:hasLanguage"]=vid["ma:hasLanguage"]
+		return thepart

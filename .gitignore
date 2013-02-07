@@ -2,3 +2,4 @@
 *.log
 !.gitignore
 import.py
+config.py

@@ -42,15 +42,15 @@ def AssetGroup(pid=None):
 		v=assets.find({"@graph.ma:isMemberOf":d["_id"]})
 		d["@graph"]["videos"]=[]
 		for vid in v:
-			resource=assets.Video.resource_pattern(vid["@graph"]["pid"],apihost)	
 			if request.args.get("full",False):
-				vid["@graph"]["type"]=assets.Video.type_pattern(vid["@graph"]["dc:type"])
+				resource=assets.Video.uri_pattern(vid["@graph"]["pid"],apihost)	
+				vid["@graph"]["type"]=assets.Video.resolve_type(vid["@graph"]["dc:type"])
 				vid["@graph"]["resource"]=resource
 				d["@graph"]['videos'].append(vid["@graph"])
 			else:
-				d["@graph"]['videos'].append({"title":vid["@graph"]["ma:title"],"pid":vid["@graph"]["pid"],"resource":resource})
-		d["@graph"]["resource"]=ags.AssetGroup.resource_pattern(d["@graph"]["pid"],apihost)
-		d["@graph"]["type"]=ags.AssetGroup.type_pattern(d["@graph"]["dc:type"])
+				d["@graph"]["videos"].append(assets.Video.make_part(vid["@graph"],apihost,request.args.get("part","details")))
+		d["@graph"]["resource"]=ags.AssetGroup.uri_pattern(d["@graph"]["pid"],apihost)
+		d["@graph"]["type"]=ags.AssetGroup.resolve_type(d["@graph"]["dc:type"])
 		resp=mongo_jsonify(d["@graph"])
 	    else:
 		resp=mongo_jsonify([])
@@ -58,8 +58,8 @@ def AssetGroup(pid=None):
 	    a=ags.find(q)
 	    aglist=[]
 	    for d in a:
-		d["@graph"]["resource"]=ags.AssetGroup.resource_pattern(d["@graph"]["pid"],apihost)
-		d["@graph"]["type"]=ags.AssetGroup.type_pattern(d["@graph"]["dc:type"])
+		d["@graph"]["resource"]=ags.AssetGroup.uri_pattern(d["@graph"]["pid"],apihost)
+		d["@graph"]["type"]=ags.AssetGroup.resolve_type(d["@graph"]["dc:type"])
 		aglist.append(d["@graph"])
 	    resp=mongo_jsonify(aglist)
     elif request.method=="DELETE" and pid:
@@ -115,9 +115,9 @@ def Video(pid=None):
 	    q['_id']=ObjectId(pid)
 	    d=assets.find_one(q)
 	    if d:
-		d["@graph"]["resource"]=assets.Video.resource_pattern(d["@graph"]["pid"],apihost)	
-		d["@graph"]["type"]=assets.Video.type_pattern(d["@graph"]["dc:type"])
-		d["@graph"]["path"]=assets.Video.resource_pattern(d["@graph"]["ma:locator"],host)
+		d["@graph"]["resource"]=assets.Video.uri_pattern(d["@graph"]["pid"],apihost)	
+		d["@graph"]["type"]=assets.Video.resolve_type(d["@graph"]["dc:type"])
+		d["@graph"]["path"]=assets.Video.uri_pattern(d["@graph"]["ma:locator"],host)
 		resp=mongo_jsonify(d["@graph"])
 	    else:
 		resp=mongo_jsonify([])
@@ -138,13 +138,12 @@ def Video(pid=None):
 		elif "ma:date" in request.args:
 		    q["@graph.ma:date"]=int(request.args.get("ma:date"))
 		for (k,v) in request.args.items():
-			if k not in ["yearfrom","yearto","ma:date"]:
+			if k not in ["yearfrom","yearto","ma:date","part"]:
 			    q["@graph."+k]={'$regex':'.*'+v+'.*'}
 	    a=assets.find(q)
 	    alist=[]
 	    for d in a:
-		resource=assets.Video.resource_pattern(d["@graph"]["pid"],apihost)
-		alist.append({"title":d["@graph"]["ma:title"],"pid":d["@graph"]["pid"],"resource":resource})
+		alist.append(assets.Video.make_part(d["@graph"],apihost,request.args.get("part","details")))
 	    resp=mongo_jsonify(alist)
     elif request.method=="DELETE" and pid:
 	    d=assets.Video.find_one({'_id': ObjectId(pid)})
