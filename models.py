@@ -51,9 +51,6 @@ class AssetGroup(Document):
 	def uri_pattern(self,pid,apihost=""):
 	    return "%s/collection/%s" % (apihost,pid)
 
-	def resolve_type(self,type,apihost=""):
-	    return type.split("/")[-1]
-
 @connection.register
 class Video(Document):
 	__collection__="assets"
@@ -137,9 +134,6 @@ class Video(Document):
 	
 	def uri_pattern(self,pid,host=""):
 	    return "%s/video/%s" % (host,pid)
-
-	def resolve_pattern(self,thetype,apihost=""):
-	    return thetype.split("/")[-1]  
 
 	def make_part(self,vid,host,part):
 		resource=self.uri_pattern(vid["pid"],host)

@@ -59,3 +59,6 @@ def xmlify(xmlstring):
 
 def mongo_jsonify(obj):
     return Response(json.dumps(obj, cls=mongokitJSON),status=200,mimetype="application/json")
+
+def resolve_type(t):
+    return t.split("/")[-1]
