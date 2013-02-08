@@ -131,9 +131,9 @@ def Video(pid=None):
 	    else:
 		if any(x in request.args for x in ['yearfrom', 'yearto']):
 		    q["@graph.ma:date"]={}
-		    if "datefrom" in request.args: 
+		    if "yearfrom" in request.args: 
 			q["@graph.ma:date"]["$gte"]=int(request.args.get("yearfrom"))
-		    if "dateto" in request.args: 
+		    if "yearto" in request.args: 
 			q["@graph.ma:date"]["$lte"]=int(request.args.get("yearto"))
 		elif "ma:date" in request.args:
 		    q["@graph.ma:date"]=int(request.args.get("ma:date"))
