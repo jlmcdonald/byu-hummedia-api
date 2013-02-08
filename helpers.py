@@ -62,3 +62,6 @@ def mongo_jsonify(obj):
 
 def resolve_type(t):
     return t.split("/")[-1]
+
+def uri_pattern(pid,host=""):
+    return "%s/%s" % (host,pid)
