@@ -1,5 +1,4 @@
 from mongokit import Document, Connection, CustomType, ObjectId
-from helpers import uri_pattern
 import datetime
 
 class IsoDate(CustomType):
@@ -174,6 +173,7 @@ class Video(Document):
 	}
 
 	def make_part(self,vid,host,part):
+		from helpers import uri_pattern
 		resource=uri_pattern(vid["pid"],host+"/video")
 		thepart={"ma:title":vid["ma:title"],"pid":vid["pid"],"resource":resource}
 		if part!="snippet":
