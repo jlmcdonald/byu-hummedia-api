@@ -1,7 +1,7 @@
 from flask import request, Response, jsonify, current_app
 from datetime import datetime, timedelta, date
 from functools import update_wrapper
-from mongokit import ObjectId
+from mongokit import ObjectId 
 from models import connection as conn
 import json
 
@@ -40,7 +40,10 @@ class Resource():
     def get(self,pid):
         q=self.set_query()
         if pid:
-            q['_id']=ObjectId(pid)
+	    try:
+            	q['_id']=ObjectId(pid)
+	    except Exception as e:
+		return bundle_400("The ID you submitted is malformed.")
             self.bundle=self.get_bundle(q)
             if self.bundle:
                 self.set_resource()
@@ -82,7 +85,7 @@ class Resource():
             self.bundle.save()
             return jsonify({"success":True,"id":self.bundle["@graph"]["pid"]})
         except Exception as e:
-            return Response("The request was malformed: %s" % (e),status=400,mimetype="text/plain")
+            return bundle_400("The request was malformed: %s" % (e))
     
     def client_process(self):
         return self.bundle
@@ -95,7 +98,7 @@ class Resource():
             self.bundle.delete()
             return jsonify({"success":"True"})
         except Exception as e:
-            return Response("The request was malformed: %s" % (e),status=400,mimetype="text/plain")
+            return bundle_400("The request was malformed: %s" % (e))
 
     def dispatch(self,pid):
         methods={"GET":self.get,"POST":self.post,"PUT":self.put,"PATCH":self.patch,"DELETE":self.delete}
@@ -159,6 +162,9 @@ def mongo_jsonify(obj):
 
 def bundle_404():
     return Response("The object was not found",status=404,mimetype="text/plain")  
+
+def bundle_400(e):
+    return Response(e,status=400,mimetype="text/plain")  
 
 def parse_npt(nptstr):
     times=nptstr.split(":")[1]
