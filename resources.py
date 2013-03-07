@@ -143,7 +143,7 @@ class Annotation(Resource):
     
     def set_query(self):
         if self.request.args.get("dc:relation",False):
-            q={"@graph.dc:relation":self.request.args.get("dc:relation")}
+            q={"@graph.dc:relation":ObjectId(self.request.args.get("dc:relation"))}
         elif self.request.args.get("dc:creator",False):
             q={"@graph.dc:creator":self.request.args.get("dc:creator")}
         else:
