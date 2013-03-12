@@ -167,9 +167,9 @@ class AssetGroup(Resource):
     def set_attrs(self):
         if "type" in self.request.json:
             self.bundle["@graph"]["dc:type"]="hummedia:type/"+self.request.json["type"]
-            for (k,v) in self.request.json.items():
-                if k in self.model.structure['@graph'] and k not in ["dc:identifier","pid","dc:type"]:
-                    self.bundle["@graph"][k]=unicode(v) if k in ["dc:title","dc:description"] else v
+	for (k,v) in self.request.json.items():
+		if k in self.model.structure['@graph'] and k not in ["dc:identifier","pid","dc:type"]:
+			self.bundle["@graph"][k]=unicode(v) if k in ["dc:title","dc:description"] else v
 
 class Annotation(Resource):
     collection=annotations
