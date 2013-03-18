@@ -49,9 +49,10 @@ class MediaAsset(Resource):
         q={}
         v=self.request.args.get("q",False)
         if v:
-            q["$or"]=[{"ititle":{'$regex':'.*'+v.lower()+'.*'}},
-            {"@graph.ma:description":{'$regex':'.*'+v+'.*', '$options':'i'}},
-            {"@graph.ma:hasKeyword":{'$regex':'.*'+v+'.*', '$options': 'i'}}
+            cire={'$regex':'.*'+v+'.*', '$options': 'i'}
+            q["$or"]=[{"ititle":cire},
+            {"@graph.ma:description":cire},
+            {"@graph.ma:hasKeyword":cire}
             ]
         else:
             if any(x in self.request.args for x in ['yearfrom', 'yearto']):
@@ -62,13 +63,14 @@ class MediaAsset(Resource):
                     q["@graph.ma:date"]["$lte"]=int(self.request.args.get("yearto"))
             elif "ma:date" in self.request.args:
                 q["@graph.ma:date"]=int(self.request.args.get("ma:date"))
-        for (k,v) in self.request.args.items():
-            if k == "ma:title":
-                q["ititle"]=v.lower()
-            elif k in ["ma:description","ma:hasKeyword"]:
-                q["@graph."+k]={'$regex':'.*'+v+'.*', '$options': 'i'}
-            elif k not in ["yearfrom","yearto","ma:date","part"]:
-                q["@graph."+k]=v
+            for (k,v) in self.request.args.items():
+                cire={'$regex':'.*'+v+'.*', '$options': 'i'}
+                if k == "ma:title":
+                    q["ititle"]=cire
+                elif k in ["ma:description","ma:hasKeyword"]:
+                    q["@graph."+k]=cire
+                elif k not in ["yearfrom","yearto","ma:date","part"]:
+                    q["@graph."+k]=v
         return q
         
     def get_list(self):
@@ -85,7 +87,13 @@ class MediaAsset(Resource):
         self.bundle["@graph"]["pid"] = str(self.bundle["_id"])
         
     def serialize_bundle(self,payload):
-        payload["@graph"]["resource"]=uri_pattern(payload["@graph"]["pid"],apihost+"/"+self.endpoint)	
+        if self.request.args.get("annotations",False):
+            a=annotations.find({"@graph.dc:relation":payload["_id"]})
+            payload["@graph"]["annotations"]=[]
+            for ann in a:
+                new_ann=Annotation(bundle=ann["@graph"],client=self.request.args.get("client",None))
+                payload["@graph"]["annotations"].append(new_ann.part.data)
+        payload["@graph"]["resource"]=uri_pattern(payload["@graph"]["pid"],apihost+"/"+self.endpoint)    
         payload["@graph"]["type"]=resolve_type(payload["@graph"]["dc:type"])
         if payload["@graph"]["type"]=="humvideo":
             payload["@graph"]["url"]=uri_pattern(payload["@graph"]["ma:locator"],host+"/"+self.endpoint)
@@ -95,35 +103,36 @@ class MediaAsset(Resource):
 
     def set_attrs(self):
         if "type" in self.request.json:
-    		self.bundle["@graph"]["dc:type"]="hummedia:type/"+self.request.json["type"]
-		for (k,v) in self.request.json.items():
-			if k in self.model.structure['@graph'] and k not in ["dc:identifier","pid","dc:type"]:
-				if k in ["ma:features","ma:contributor"]:
-					for i in v:
-						self.bundle["@graph"][k].append({"@id":i["@id"],"name":unicode(i["name"])})
-				elif k in ["ma:isCopyrightedBy","ma:hasGenre"]:
-					self.bundle["@graph"][k]={"@id":v["@id"],"name":unicode(["name"]) }
-					self.bundle["@graph"][k]=ObjectId(v)
-				elif self.model.structure['@graph'][k]==type(u""):
-					self.bundle["@graph"][k]=unicode(v)
-				if k=="ma:title":
-					self.bundle["ititle"]=unicode(v).lower()
-				elif self.model.structure['@graph'][k]==type(2):
-					self.bundle["@graph"][k]=int(v)
-				elif self.model.structure['@graph'][k]==type(2.0):
-					self.bundle["@graph"][k]=float(v)
-				elif type(self.model.structure['@graph'][k])==type([]):
-					self.bundle["@graph"][k]=[]
-					for i in v:
-						if k=="ma:isMemberOf":
-							membership={}
-							for (g,h) in i.items():
-								membership[g]=ObjectId(h) if g=="@id" else h
-							self.bundle["@graph"]["ma:isMemberOf"].append(membership)
-						else:
-							self.bundle["@graph"][k].append(i)	
-				else: 
-				    self.bundle["@graph"][k]=v
+            self.bundle["@graph"]["dc:type"]="hummedia:type/"+self.request.json["type"]
+        for (k,v) in self.request.json.items():
+            if k in self.model.structure['@graph'] and k not in ["dc:identifier","pid","dc:type"]:
+                if k in ["ma:features","ma:contributor"]:
+                    for i in v:
+                        self.bundle["@graph"][k].append({"@id":i["@id"],"name":unicode(i["name"])})
+                elif k in ["ma:isCopyrightedBy","ma:hasGenre"]:
+                    self.bundle["@graph"][k]={"@id":v["@id"],"name":unicode(["name"]) }
+                    self.bundle["@graph"][k]=ObjectId(v)
+                elif self.model.structure['@graph'][k]==type(u""):
+                    self.bundle["@graph"][k]=unicode(v)
+                if k=="ma:title":
+                    self.bundle["ititle"]=unicode(v).lower()
+                    self.bundle["@graph"]["ma:title"]=unicode(v)
+                elif self.model.structure['@graph'][k]==type(2):
+                    self.bundle["@graph"][k]=int(v)
+                elif self.model.structure['@graph'][k]==type(2.0):
+                    self.bundle["@graph"][k]=float(v)
+                elif type(self.model.structure['@graph'][k])==type([]):
+                    self.bundle["@graph"][k]=[]
+                    for i in v:
+                        if k=="ma:isMemberOf":
+                            membership={}
+                            for (g,h) in i.items():
+                                membership[g]=ObjectId(h) if g=="@id" else h
+                            self.bundle["@graph"]["ma:isMemberOf"].append(membership)
+                        else:
+                            self.bundle["@graph"][k].append(i)    
+                else: 
+                    self.bundle["@graph"][k]=v
 
 class AssetGroup(Resource):
     collection=ags
@@ -151,11 +160,11 @@ class AssetGroup(Resource):
         self.bundle["@graph"]["pid"] = str(self.bundle["_id"])
         
     def serialize_bundle(self,payload):
-    	v=assets.find({"@graph.ma:isMemberOf.@id":payload["_id"]})
+        v=assets.find({"@graph.ma:isMemberOf.@id":payload["_id"]})
         payload["@graph"]["videos"]=[]
         for vid in v:
             if self.request.args.get("full",False):
-                resource=uri_pattern(vid["@graph"]["pid"],apihost+"/video")	
+                resource=uri_pattern(vid["@graph"]["pid"],apihost+"/video")    
                 vid["@graph"]["type"]=resolve_type(vid["@graph"]["dc:type"])
                 vid["@graph"]["resource"]=resource
                 payload["@graph"]['videos'].append(vid["@graph"])
@@ -167,9 +176,9 @@ class AssetGroup(Resource):
     def set_attrs(self):
         if "type" in self.request.json:
             self.bundle["@graph"]["dc:type"]="hummedia:type/"+self.request.json["type"]
-	for (k,v) in self.request.json.items():
-		if k in self.model.structure['@graph'] and k not in ["dc:identifier","pid","dc:type"]:
-			self.bundle["@graph"][k]=unicode(v) if k in ["dc:title","dc:description"] else v
+        for (k,v) in self.request.json.items():
+            if k in self.model.structure['@graph'] and k not in ["dc:identifier","pid","dc:type"]:
+                self.bundle["@graph"][k]=unicode(v) if k in ["dc:title","dc:description"] else v
 
 class Annotation(Resource):
     collection=annotations

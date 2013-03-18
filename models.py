@@ -16,6 +16,26 @@ class IsoDate(CustomType):
 connection=Connection()
 
 @connection.register
+class User(Document):
+    __collection__="users"
+    __database__="hummedia"
+    use_schemaless=True
+    structure={
+        "username": basestring,
+        "email": basestring,
+        "firstname": unicode,
+        "lastname": unicode,
+        "preferredLanguage": basestring,
+        "oauth": {
+            "google": dict,
+            "facebook": dict,
+            "twitter": dict
+        }
+    }
+    required_fields=["username","email"]
+    default_values={"username":"","email":""}
+    
+@connection.register
 class AnnotationList(Document):
 	__collection__="annotations"
 	__database__="hummedia"
