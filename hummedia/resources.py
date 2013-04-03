@@ -1,12 +1,11 @@
 from datetime import datetime
-from models import connection as client
+from models import connection as conn
 from flask import Response, jsonify
 from helpers import Resource, mongo_jsonify, parse_npt, resolve_type, uri_pattern, bundle_400
 from mongokit import ObjectId
-from config import *
-import clients
+import clients, config
 
-db=client.hummedia
+db=conn.hummedia
 ags=db.assetgroups
 assets=db.assets
 annotations=db.annotations
@@ -33,10 +32,13 @@ class UserProfile(Resource):
     
     def set_query(self):
         q={}
-        if self.request.args.get("oauth",False):
-            q["oauth"][self.request.args.get("provider")]=self.request.args.get("provider_account")
-        elif self.request.args.get("email",False):
-            q["email"]=self.request.args.get("email")
+        if self.request:
+            if self.request.args.get("oauth",False):
+                q["oauth"][self.request.args.get("provider")]=self.request.args.get("provider_account")
+            elif self.request.args.get("email",False):
+                q["email"]=self.request.args.get("email")
+        else:
+            q["oauth"][self.manual_request["provider"]]=self.manual_request["provider_id"]
         return q
       
 class MediaAsset(Resource):
@@ -76,11 +78,11 @@ class MediaAsset(Resource):
     def get_list(self):
         alist=[]
         for d in self.bundle:
-            alist.append(self.model.make_part(d["@graph"],apihost,self.request.args.get("part","details")))
+            alist.append(self.model.make_part(d["@graph"],config.APIHOST,self.request.args.get("part","details")))
         return mongo_jsonify(alist)
         
     def set_resource(self):
-        self.bundle["@graph"]["resource"]=uri_pattern(self.bundle["@graph"]["pid"],apihost+"/"+self.endpoint)
+        self.bundle["@graph"]["resource"]=uri_pattern(self.bundle["@graph"]["pid"],config.APIHOST+"/"+self.endpoint)
 
     def preprocess_bundle(self):
         self.bundle["@graph"]["dc:identifier"] = "%s/%s" % (self.namespace,str(self.bundle["_id"]))
@@ -93,10 +95,10 @@ class MediaAsset(Resource):
             for ann in a:
                 new_ann=Annotation(bundle=ann["@graph"],client=self.request.args.get("client",None))
                 payload["@graph"]["annotations"].append(new_ann.part.data)
-        payload["@graph"]["resource"]=uri_pattern(payload["@graph"]["pid"],apihost+"/"+self.endpoint)    
+        payload["@graph"]["resource"]=uri_pattern(payload["@graph"]["pid"],config.APIHOST+"/"+self.endpoint)    
         payload["@graph"]["type"]=resolve_type(payload["@graph"]["dc:type"])
         if payload["@graph"]["type"]=="humvideo":
-            payload["@graph"]["url"]=uri_pattern(payload["@graph"]["ma:locator"],host+"/"+self.endpoint)
+            payload["@graph"]["url"]=uri_pattern(payload["@graph"]["ma:locator"],config.HOST+"/"+self.endpoint)
         elif payload["@graph"]["type"]=="yt":
             payload["@graph"]["url"]=uri_pattern(payload["@graph"]["ma:locator"],"http://youtu.be")
         return mongo_jsonify(payload["@graph"])
@@ -147,13 +149,13 @@ class AssetGroup(Resource):
     def get_list(self):
         alist=[]
         for d in self.bundle:
-            d["@graph"]["resource"]=uri_pattern(d["@graph"]["pid"],apihost+"/"+self.endpoint)
+            d["@graph"]["resource"]=uri_pattern(d["@graph"]["pid"],config.APIHOST+"/"+self.endpoint)
             d["@graph"]["type"]=resolve_type(d["@graph"]["dc:type"])
             alist.append(d["@graph"])
         return mongo_jsonify(alist)
         
     def set_resource(self):
-        self.bundle["@graph"]["resource"]=uri_pattern(self.bundle["@graph"]["pid"],apihost+"/"+self.endpoint)
+        self.bundle["@graph"]["resource"]=uri_pattern(self.bundle["@graph"]["pid"],config.APIHOST+"/"+self.endpoint)
 
     def preprocess_bundle(self):
         self.bundle["@graph"]["dc:identifier"] = "%s/%s" % (self.namespace,str(self.bundle["_id"]))
@@ -164,12 +166,12 @@ class AssetGroup(Resource):
         payload["@graph"]["videos"]=[]
         for vid in v:
             if self.request.args.get("full",False):
-                resource=uri_pattern(vid["@graph"]["pid"],apihost+"/video")    
+                resource=uri_pattern(vid["@graph"]["pid"],config.APIHOST+"/video")    
                 vid["@graph"]["type"]=resolve_type(vid["@graph"]["dc:type"])
                 vid["@graph"]["resource"]=resource
                 payload["@graph"]['videos'].append(vid["@graph"])
             else:
-                payload["@graph"]["videos"].append(assets.Video.make_part(vid["@graph"],apihost,self.request.args.get("part","details")))
+                payload["@graph"]["videos"].append(assets.Video.make_part(vid["@graph"],config.APIHOST,self.request.args.get("part","details")))
         payload["@graph"]["type"]=resolve_type(payload["@graph"]["dc:type"])
         return mongo_jsonify(payload["@graph"])
     
@@ -198,20 +200,20 @@ class Annotation(Resource):
     def get_list(self):
         alist=[]
         for d in self.bundle:
-            d["@graph"]["resource"]=uri_pattern(d["@graph"]["pid"],apihost+"/"+self.endpoint)
+            d["@graph"]["resource"]=uri_pattern(d["@graph"]["pid"],config.APIHOST+"/"+self.endpoint)
             alist.append(d["@graph"])
         return mongo_jsonify(alist)
         
     def set_resource(self):
-        self.bundle["@graph"]["resource"]=uri_pattern(self.bundle["@graph"]["pid"],apihost+"/"+self.endpoint)
+        self.bundle["@graph"]["resource"]=uri_pattern(self.bundle["@graph"]["pid"],config.APIHOST+"/"+self.endpoint)
         
     def client_process(self):
         c=clients.lookup[self.request.args.get("client")]()
         m=assets.find_one(self.bundle["@graph"]["dc:relation"])
-        m["@graph"]["resource"]=uri_pattern(m["@graph"]["pid"],apihost+"/video")
+        m["@graph"]["resource"]=uri_pattern(m["@graph"]["pid"],config.APIHOST+"/video")
         m["@graph"]["type"]=resolve_type(m["@graph"]["dc:type"])
         if m["@graph"]["type"]=="humvideo":
-            m["@graph"]["url"]=uri_pattern(m["@graph"]["ma:locator"],host+"/video")
+            m["@graph"]["url"]=uri_pattern(m["@graph"]["ma:locator"],config.HOST+"/video")
         elif m["@graph"]["type"]=="yt":
             m["@graph"]["url"]=uri_pattern(m["@graph"]["ma:locator"],"http://youtu.be")
         return c.serialize(self.bundle["@graph"],m["@graph"])

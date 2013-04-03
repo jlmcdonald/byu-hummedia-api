@@ -1,13 +1,43 @@
 from flask import request, Response, jsonify, current_app
+from flask_oauth import OAuth
 from datetime import datetime, timedelta, date
 from functools import update_wrapper
 from mongokit import ObjectId 
 from models import connection as conn
-from config import apihost
+from config import APIHOST
 import json
 
 class NoModelException(Exception):
     pass
+
+class OAuthProvider():
+    client_id=None
+    client_secret=None
+    base_url=None
+    authorize_url=None
+    request_token_url=None
+    request_token_params={'scope': None,'response_type': 'code'}
+    access_token_url=None
+    token_verify_url=None
+    access_token_method='POST'
+    access_token_params={'grant_type': 'authorization_code'}
+    oauth=OAuth()
+    remote_app=None
+
+    def __init__(self,providerService):
+        self.remote_app=self.oauth.remote_app(providerService,
+                        base_url=self.base_url,
+                        authorize_url=self.authorize_url,
+                        request_token_url=self.request_token_url,
+                        request_token_params=self.request_token_params,
+                        access_token_url=self.access_token_url,
+                        access_token_method=self.access_token_method,
+                        access_token_params=self.access_token_params,
+                        consumer_key=self.client_id,
+                        consumer_secret=self.client_secret)
+
+    def get_remote_app(self):
+        return self.remote_app
 
 class Resource():
     collection=conn.test.test
@@ -17,8 +47,9 @@ class Resource():
     bundle=None
     request=None
     part=None
+    manual_request={}
     
-    def __init__(self,request=None,bundle=None, client=None):
+    def __init__(self,request=None,bundle=None, client=None,**kwargs):
         if bundle:
             self.bundle=bundle
             self.set_resource()
@@ -26,8 +57,10 @@ class Resource():
                 self.part=self.client_process()
             else:
                 self.part=self.serialize_bundle(self.bundle)
-        else:
+        elif request:
             self.request=request
+        else:
+            self.manual_request=kwargs
     
     if not model:
         raise NoModelException("You have to declare the model for the resource")
@@ -81,7 +114,7 @@ class Resource():
         return mongo_jsonify(payload)
         
     def set_resource(self):
-        self.bundle["resource"]=uri_pattern(str(self.bundle["_id"]),apihost+"/"+self.endpoint)
+        self.bundle["resource"]=uri_pattern(str(self.bundle["_id"]),APIHOST+"/"+self.endpoint)
 
     def set_attrs(self):
         for (k,v) in self.request.json.items():
@@ -190,6 +223,9 @@ def endpoint_404():
 
 def bundle_400(e):
     return Response(e,status=400,mimetype="text/plain")  
+
+def plain_resp(obj):
+    return Response(obj,status=200,mimetype="text/plain")
 
 def parse_npt(nptstr):
     times=nptstr.split(":")[1]

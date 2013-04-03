@@ -1,5 +1,6 @@
-*.pyc
-*.log
 !.gitignore
-import.py
-config.py
+*.log
+*.pyc
+hummedia/*.pyc
+hummedia/import.py
+hummedia/config.py

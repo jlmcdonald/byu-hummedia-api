@@ -1,4 +1,4 @@
-from mongokit import Document, Connection, CustomType, ObjectId
+from mongokit import Document, Connection, CustomType, ObjectId, OR
 import datetime
 
 class IsoDate(CustomType):
@@ -25,15 +25,17 @@ class User(Document):
         "email": basestring,
         "firstname": unicode,
         "lastname": unicode,
+        "role": basestring,
+        "superuser": bool,
         "preferredLanguage": basestring,
         "oauth": {
-            "google": dict,
+            "google": {"id": basestring, "email": basestring, "access_token": list},
             "facebook": dict,
             "twitter": dict
         }
     }
     required_fields=["username","email"]
-    default_values={"username":"","email":""}
+    default_values={"username":"","email":"","preferredLanguage":"en","role":"student","superuser":False}
     
 @connection.register
 class AnnotationList(Document):
