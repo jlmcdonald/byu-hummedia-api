@@ -92,7 +92,8 @@ class AssetGroup(Document):
 			"dc:relation": basestring,
 			"dc:creator": basestring,
 			"dc:date":IsoDate(),
-			"dc:coverage": int
+			"dc:coverage": int,
+            "dc:rights": list
 		}
 	}
 	required_fields=["@context","@graph.dc:type","@graph.dc:creator",

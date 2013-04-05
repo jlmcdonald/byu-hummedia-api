@@ -104,7 +104,11 @@ class Resource():
         self.bundle=self.model.find_one({'_id': ObjectId(id)})
         return self.delete_obj()
         
+    def auth_filter(self):
+        pass
+        
     def get_bundle(self,q):
+        self.auth_filter()
         return self.collection.find_one(q)
 
     def get_list(self):
@@ -166,6 +170,9 @@ class mongokitJSON(json.JSONEncoder):
         elif isinstance(obj, ObjectId): 
             return str(obj)
         return json.JSONEncoder.default(self, obj)
+        
+def get_auth():
+    return [get_user(),get_role(),is_superuser()]
 
 def crossdomain(origin=None, methods=None, headers=None,
                 max_age=21600, attach_to_all=True,

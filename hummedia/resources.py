@@ -2,6 +2,7 @@ from datetime import datetime
 from models import connection as conn
 from flask import Response, jsonify
 from helpers import Resource, mongo_jsonify, parse_npt, resolve_type, uri_pattern, bundle_400
+from auth import get_profile
 from mongokit import ObjectId
 import clients, config
 
@@ -110,9 +111,9 @@ class MediaAsset(Resource):
             if k in self.model.structure['@graph'] and k not in ["dc:identifier","pid","dc:type"]:
                 if k in ["ma:features","ma:contributor"]:
                     for i in v:
-                        self.bundle["@graph"][k].append({"@id":i["@id"],"name":unicode(i["name"])})
+                        self.bundle["@graph"][k].append({"@id":i["@id"],"name":unicode(i[k])})
                 elif k in ["ma:isCopyrightedBy","ma:hasGenre"]:
-                    self.bundle["@graph"][k]={"@id":v["@id"],"name":unicode(["name"]) }
+                    self.bundle["@graph"][k]={"@id":v["@id"],"name":unicode([k]) }
                     self.bundle["@graph"][k]=ObjectId(v)
                 elif self.model.structure['@graph'][k]==type(u""):
                     self.bundle["@graph"][k]=unicode(v)
@@ -148,10 +149,12 @@ class AssetGroup(Resource):
         
     def get_list(self):
         alist=[]
-        for d in self.bundle:
-            d["@graph"]["resource"]=uri_pattern(d["@graph"]["pid"],config.APIHOST+"/"+self.endpoint)
-            d["@graph"]["type"]=resolve_type(d["@graph"]["dc:type"])
-            alist.append(d["@graph"])
+        self.auth_filter()
+        if self.bundle:
+            for d in self.bundle:
+                d["@graph"]["resource"]=uri_pattern(d["@graph"]["pid"],config.APIHOST+"/"+self.endpoint)
+                d["@graph"]["type"]=resolve_type(d["@graph"]["dc:type"])
+                alist.append(d["@graph"])
         return mongo_jsonify(alist)
         
     def set_resource(self):
@@ -160,6 +163,11 @@ class AssetGroup(Resource):
     def preprocess_bundle(self):
         self.bundle["@graph"]["dc:identifier"] = "%s/%s" % (self.namespace,str(self.bundle["_id"]))
         self.bundle["@graph"]["pid"] = str(self.bundle["_id"])
+        
+    def auth_filter(self):
+        atts=get_profile()
+        if not atts['username']:
+            self.bundle=None
         
     def serialize_bundle(self,payload):
         v=assets.find({"@graph.ma:isMemberOf.@id":payload["_id"]})
