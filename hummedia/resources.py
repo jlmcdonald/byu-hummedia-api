@@ -117,7 +117,7 @@ class MediaAsset(Resource):
                     self.bundle["@graph"][k]=ObjectId(v)
                 elif self.model.structure['@graph'][k]==type(u""):
                     self.bundle["@graph"][k]=unicode(v)
-                if k=="ma:title":
+                elif k=="ma:title":
                     self.bundle["ititle"]=unicode(v).lower()
                     self.bundle["@graph"]["ma:title"]=unicode(v)
                 elif self.model.structure['@graph'][k]==type(2):
@@ -168,6 +168,11 @@ class AssetGroup(Resource):
         atts=get_profile()
         if not atts['username']:
             self.bundle=None
+        elif not atts['superuser']:
+            if atts['role']=="faculty":
+                pass # filter by owner
+            else:
+                pass # filter by course
         
     def serialize_bundle(self,payload):
         v=assets.find({"@graph.ma:isMemberOf.@id":payload["_id"]})

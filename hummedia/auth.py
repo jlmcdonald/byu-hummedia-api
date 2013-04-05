@@ -30,6 +30,8 @@ def get_profile():
     atts={}
     for att in ['username','role','superuser','fullname']:
         atts[att]=session.get(att)
+    if (atts['username'] is None or atts['username']=="") and session.get('oauth'):
+	atts['oauth']=session.get('oauth')['provider']
     return atts
     
 def get_redirect_url():
@@ -151,6 +153,3 @@ def authorized(resp):
 @app.route('/account/profile',methods=['GET'])
 def profile():
     return jsonify(get_profile())
-
-        
-        
