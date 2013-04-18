@@ -1,12 +1,13 @@
 from datetime import datetime
-from models import connection as conn
+from os.path import splitext
+from models import connection
 from flask import Response, jsonify
 from helpers import Resource, mongo_jsonify, parse_npt, resolve_type, uri_pattern, bundle_400
-from auth import get_profile
 from mongokit import ObjectId
+from urlparse import urlparse, parse_qs
 import clients, config
 
-db=conn.hummedia
+db=connection.hummedia
 ags=db.assetgroups
 assets=db.assets
 annotations=db.annotations
@@ -78,6 +79,7 @@ class MediaAsset(Resource):
         
     def get_list(self):
         alist=[]
+        self.auth_filter()
         for d in self.bundle:
             alist.append(self.model.make_part(d["@graph"],config.APIHOST,self.request.args.get("part","details")))
         return mongo_jsonify(alist)
@@ -98,17 +100,27 @@ class MediaAsset(Resource):
                 payload["@graph"]["annotations"].append(new_ann.part.data)
         payload["@graph"]["resource"]=uri_pattern(payload["@graph"]["pid"],config.APIHOST+"/"+self.endpoint)    
         payload["@graph"]["type"]=resolve_type(payload["@graph"]["dc:type"])
+        payload["@graph"]["url"]=[]
         if payload["@graph"]["type"]=="humvideo":
-            payload["@graph"]["url"]=uri_pattern(payload["@graph"]["ma:locator"],config.HOST+"/"+self.endpoint)
+            prefix=config.HOST+"/"+self.endpoint
+            needs_ext=True
         elif payload["@graph"]["type"]=="yt":
-            payload["@graph"]["url"]=uri_pattern(payload["@graph"]["ma:locator"],"http://youtu.be")
+            prefix="http://youtu.be"
+            needs_ext=False
+        for location in payload["@graph"]["ma:locator"]:
+            if needs_ext:
+                ext=location["ma:hasFormat"].split("/")[-1]
+                loc=".".join([location["@id"],ext])
+            else:
+                loc=location["@id"]
+            payload["@graph"]["url"].append(uri_pattern(loc,prefix))
         return mongo_jsonify(payload["@graph"])
 
     def set_attrs(self):
         if "type" in self.request.json:
             self.bundle["@graph"]["dc:type"]="hummedia:type/"+self.request.json["type"]
         for (k,v) in self.request.json.items():
-            if k in self.model.structure['@graph'] and k not in ["dc:identifier","pid","dc:type"]:
+            if (k in self.model.structure['@graph'] and k not in ["dc:identifier","pid","dc:type"]):
                 if k in ["ma:features","ma:contributor"]:
                     for i in v:
                         self.bundle["@graph"][k].append({"@id":i["@id"],"name":unicode(i[k])})
@@ -131,11 +143,30 @@ class MediaAsset(Resource):
                             membership={}
                             for (g,h) in i.items():
                                 membership[g]=ObjectId(h) if g=="@id" else h
-                            self.bundle["@graph"]["ma:isMemberOf"].append(membership)
+                            self.bundle["@graph"][k].append(membership)
                         else:
                             self.bundle["@graph"][k].append(i)    
                 else: 
                     self.bundle["@graph"][k]=v
+            elif k=="url":
+                if type(v)!=type([]):
+                    v=[v]
+                self.bundle["@graph"]["ma:locator"]=[]
+                for i in v:
+                    p=urlparse(i)
+                    if p[1]=="youtube.com":
+                        path=parse_qs(p[4])["v"]
+                    else:
+                        path=p[2]
+                    path=path.split("/")[-1]
+                    file,ext=splitext(path)
+                    ext=ext.replace(".","")
+                    loc={"@id":file,"ma:hasFormat":"video/"+ext}
+                    if ext=="mp4":
+                        loc["ma:hasCompression"]={"@id":"http://www.freebase.com/view/en/h_264_mpeg_4_avc","name": "avc.42E01E"}
+                    elif ext=="webm":
+                        loc["ma:hasCompression"]={"@id":"http://www.freebase.com/m/0c02yk5","name":"vp8.0"}
+                    self.bundle["@graph"]["ma:locator"].append(loc)
 
 class AssetGroup(Resource):
     collection=ags
@@ -164,29 +195,23 @@ class AssetGroup(Resource):
         self.bundle["@graph"]["dc:identifier"] = "%s/%s" % (self.namespace,str(self.bundle["_id"]))
         self.bundle["@graph"]["pid"] = str(self.bundle["_id"])
         
-    def auth_filter(self):
-        atts=get_profile()
-        if not atts['username']:
-            self.bundle=None
-        elif not atts['superuser']:
-            if atts['role']=="faculty":
-                pass # filter by owner
-            else:
-                pass # filter by course
-        
     def serialize_bundle(self,payload):
-        v=assets.find({"@graph.ma:isMemberOf.@id":payload["_id"]})
-        payload["@graph"]["videos"]=[]
-        for vid in v:
-            if self.request.args.get("full",False):
-                resource=uri_pattern(vid["@graph"]["pid"],config.APIHOST+"/video")    
-                vid["@graph"]["type"]=resolve_type(vid["@graph"]["dc:type"])
-                vid["@graph"]["resource"]=resource
-                payload["@graph"]['videos'].append(vid["@graph"])
-            else:
-                payload["@graph"]["videos"].append(assets.Video.make_part(vid["@graph"],config.APIHOST,self.request.args.get("part","details")))
-        payload["@graph"]["type"]=resolve_type(payload["@graph"]["dc:type"])
-        return mongo_jsonify(payload["@graph"])
+        if payload:
+            v=assets.find({"@graph.ma:isMemberOf.@id":payload["_id"]})
+            payload["@graph"]["videos"]=[]
+            v=self.auth_filter(v)
+            for vid in v:
+                if self.request.args.get("full",False):
+                    resource=uri_pattern(vid["@graph"]["pid"],config.APIHOST+"/video")    
+                    vid["@graph"]["type"]=resolve_type(vid["@graph"]["dc:type"])
+                    vid["@graph"]["resource"]=resource
+                    payload["@graph"]['videos'].append(vid["@graph"])
+                else:
+                    payload["@graph"]["videos"].append(assets.Video.make_part(vid["@graph"],config.APIHOST,self.request.args.get("part","details")))
+            payload["@graph"]["type"]=resolve_type(payload["@graph"]["dc:type"])
+            return mongo_jsonify(payload["@graph"])
+        else:
+            return mongo_jsonify({})
     
     def set_attrs(self):
         if "type" in self.request.json:
@@ -212,6 +237,7 @@ class Annotation(Resource):
         
     def get_list(self):
         alist=[]
+        self.auth_filter()
         for d in self.bundle:
             d["@graph"]["resource"]=uri_pattern(d["@graph"]["pid"],config.APIHOST+"/"+self.endpoint)
             alist.append(d["@graph"])

@@ -5,11 +5,15 @@ class Popcorn_Client():
     def deserialize(self,request):
         types={"reference":"oax:classification","modal":"oax:description"}
         packet={}
-        packet["dc:relation"]=request.json["media"][0]["id"]
-        packet["dc:creator"]=request.json["creator"]
+        if "id" in request.json["media"][0]:
+            packet["dc:relation"]=request.json["media"][0]["id"]
+        if "creator" in request.json:
+            packet["dc:creator"]=request.json["creator"]
         for track in request.json["media"][0]["tracks"]:
-            packet["dc:title"]=track["name"]
-            packet["vcp:playSettings"]=track["settings"]
+            if "name" in track:
+                packet["dc:title"]=track["name"]
+            if "settings" in track:
+                packet["vcp:playSettings"]=track["settings"]
             packet["vcp:commands"]=[]
             for event in track["trackEvents"]:
                 etype=types[event["type"]] if event["type"] in types else "oa:annotation"

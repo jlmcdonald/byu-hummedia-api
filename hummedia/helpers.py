@@ -2,8 +2,8 @@ from flask import request, Response, jsonify, current_app
 from flask_oauth import OAuth
 from datetime import datetime, timedelta, date
 from functools import update_wrapper
-from mongokit import ObjectId 
-from models import connection as conn
+from mongokit import ObjectId, cursor 
+from models import connection
 from config import APIHOST
 import json
 
@@ -40,8 +40,8 @@ class OAuthProvider():
         return self.remote_app
 
 class Resource():
-    collection=conn.test.test
-    model=conn.test.test.TestObject
+    collection=connection.test.test
+    model=collection.TestObject
     namespace="hummedia:id/object"
     endpoint="test"
     bundle=None
@@ -90,6 +90,7 @@ class Resource():
             self.bundle=self.get_bundle(q)
             if self.bundle:
                 self.set_resource()
+                self.auth_filter()
                 if self.request.args.get("client",None):
                     return self.client_process()
                 else:
@@ -104,11 +105,33 @@ class Resource():
         self.bundle=self.model.find_one({'_id': ObjectId(id)})
         return self.delete_obj()
         
-    def auth_filter(self):
-        pass
+    def auth_filter(self,bundle=None):
+        from auth import get_profile
+        atts=get_profile()
+        if not atts['username']:
+            self.acl_filter(bundle=bundle)
+        elif not atts['superuser']:
+            if atts['role']=="faculty":
+                self.acl_filter(["public","BYU"],atts['username'],atts['role'],bundle)
+            else:
+                pass # filter by course
+        return bundle
+    
+    def acl_filter(self,allowed=["public"],username="unauth",role=None,bundle=None):
+        if not bundle:
+            bundle=self.bundle
+        if type(bundle)==cursor.Cursor:
+            bundle=list(bundle)
+            for obj in bundle[:]:
+                if obj["@graph"]["dc:coverage"] not in allowed and username not in obj["@graph"]["dc:rights"]["read"]:
+                    if role!="faculty" or (role=="faculty" and obj["@graph"]["dc:creator"]!=username):
+                        bundle.remove(obj)
+        elif bundle["@graph"]["dc:coverage"] not in allowed and username not in bundle["@graph"]["dc:rights"]["read"]:
+            if role!="faculty" or (role=="faculty" and bundle["@graph"]["dc:creator"]!=username):
+                bundle={}
+        return bundle               
         
     def get_bundle(self,q):
-        self.auth_filter()
         return self.collection.find_one(q)
 
     def get_list(self):
@@ -116,7 +139,7 @@ class Resource():
 
     def serialize_bundle(self,payload):
         return mongo_jsonify(payload)
-        
+
     def set_resource(self):
         self.bundle["resource"]=uri_pattern(str(self.bundle["_id"]),APIHOST+"/"+self.endpoint)
 

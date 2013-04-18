@@ -1,7 +1,9 @@
 from flask import request, session, redirect, url_for, jsonify
-from models import connection as conn
+from models import connection
 from urllib2 import Request, urlopen, URLError
-import urllib, urlparse
+from hashlib import sha512
+from base64 import b64encode
+import urllib, urlparse, hmac
 from providers import *
 import json, config
 
@@ -54,6 +56,16 @@ def make_token_header():
     else:
         return 'OAuth '+access_token[0]
 
+def get_byu_hmac_nonce():
+    nonce_service="https://ws.byu.edu/authentication/services/rest/v1/hmac/nonce/%s" % config.BYU_API_KEY
+    req=Request(nonce_service,"return=1")
+    res=urlopen(req)
+    j=json.loads(res.read())
+    res.close()
+    binary_hash=hmacnew(config.BYU_SHARED_SECRET,j['nonceValue'],sha512).digest()
+    h=b64encode(binary_hash)
+    return (binary_hash,h)
+    
 def verify_oauth_access(th):
     headers = {'Authorization': th}
     req = Request(oAuthService.token_verify_url,None, headers)
@@ -67,7 +79,7 @@ def verify_oauth_access(th):
 
 def get_user_from_oauth(provider,atts,access_token=None):
     q = {"oauth.%s.id" % (provider):atts['id']}
-    user=conn.User.find_one(q)
+    user=connection.User.find_one(q)
     if user is None:
         session["oauth"]={"provider":provider,"id":atts['id'],"access_token":access_token,"email":atts['email']}
         user={"username":"","role":"","superuser":False,"fullname":""}
@@ -77,9 +89,9 @@ def get_user_from_cas(netid=None,atts=None):
     if not netid:
         netid=get_user()
     q = {"username":netid}
-    user=conn.User.find_one(q)
+    user=connection.User.find_one(q)
     if user is None:
-        user=conn.User()
+        user=connection.User()
         faculty_positions=["activeFulltimeEmployee","activeFulltimeInstructor","activeParttimeEmployee","activeParttimeInstructor"]
         user["username"]=netid
         user["firstname"]=unicode(atts["preferredFirstName"])
@@ -97,7 +109,7 @@ def get_user_from_cas(netid=None,atts=None):
     set_session_vars(user)
     return {"user":get_user()}
     
-def auth_redirect(provider="cas"):
+def auth_redirect(provider="cas",authUser=None):
     if provider=="google":
         th=make_token_header()
         if th:
@@ -110,6 +122,9 @@ def auth_redirect(provider="cas"):
                     get_user_from_cas()
                 return redirect(get_redirect_url())
         return redirect(url_for("apiLogin",providerService=provider))
+    elif provider=="authHeader" and authUser is not None:
+        user=connection.User.find_one({"username":authUser})
+        set_session_vars(user)
     return redirect(get_redirect_url())
 
 @app.route('/account/login',methods=['GET'])
@@ -123,15 +138,18 @@ def apiLogin(providerService="cas"):
             return auth_redirect(provider=providerService)
         else:
             return provider.authorize(callback=config.APIHOST+config.GOOGLE_REDIRECT_URI)
+    elif providerService == "authHeader":
+        return auth_redirect(providerService,request.headers.get("Authorization"))
     else:
         return redirect(cas.login_url(config.APIHOST+config.REDIRECT_URI))
         
 @app.route('/account/logout',methods=['GET'])
 def apiLogout():
-    session.pop('username')
+    if "username" in session:
+        session.pop('username')
     r=request.args.get("r",get_redirect_url())
     session.clear()
-    return redirect(r)
+    return "logout successful"
 
 @app.route(config.REDIRECT_URI)
 @provider.authorized_handler
