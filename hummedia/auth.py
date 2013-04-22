@@ -122,7 +122,7 @@ def auth_redirect(provider="cas",authUser=None):
                     get_user_from_cas()
                 return redirect(get_redirect_url())
         return redirect(url_for("apiLogin",providerService=provider))
-    elif provider=="authHeader" and authUser is not None:
+    elif provider=="authUser" and authUser is not None:
         user=connection.User.find_one({"username":authUser})
         set_session_vars(user)
     return redirect(get_redirect_url())
@@ -138,7 +138,7 @@ def apiLogin(providerService="cas"):
             return auth_redirect(provider=providerService)
         else:
             return provider.authorize(callback=config.APIHOST+config.GOOGLE_REDIRECT_URI)
-    elif providerService == "authHeader":
+    elif providerService == "authUser":
         return auth_redirect(providerService,request.headers.get("Authorization"))
     else:
         return redirect(cas.login_url(config.APIHOST+config.REDIRECT_URI))
