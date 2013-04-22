@@ -210,7 +210,7 @@ class mongokitJSON(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, (datetime, date)): 
             return int(time.mktime(obj.timetuple())) 
-        elif type(obj)==type(ObjectId(str(obj))): 
+        elif obj==ObjectId(str(obj)): 
             return str(obj)
         else:
             return json.JSONEncoder.default(self, obj)
