@@ -154,6 +154,7 @@ class Resource():
         return self.collection.find_one(q)
 
     def get_list(self):
+        self.auth_filter()
         return mongo_jsonify(list(self.bundle))
 
     def serialize_bundle(self,payload):
@@ -209,9 +210,10 @@ class mongokitJSON(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, (datetime, date)): 
             return int(time.mktime(obj.timetuple())) 
-        elif isinstance(obj, ObjectId): 
+        elif type(obj)==type(ObjectId(str(obj))): 
             return str(obj)
-        return json.JSONEncoder.default(self, obj)
+        else:
+            return json.JSONEncoder.default(self, obj)
         
 def get_auth():
     return [get_user(),get_role(),is_superuser()]

@@ -2,8 +2,8 @@ from datetime import datetime
 from os.path import splitext
 from models import connection
 from flask import Response, jsonify
-from helpers import Resource, mongo_jsonify, parse_npt, resolve_type, uri_pattern, bundle_400
-from mongokit import ObjectId
+from helpers import Resource, mongo_jsonify, parse_npt, resolve_type, uri_pattern, bundle_400, action_401
+from mongokit import ObjectId, cursor
 from urlparse import urlparse, parse_qs
 import clients, config
 
@@ -19,18 +19,46 @@ class UserProfile(Resource):
     namespace="hummedia:id/user"
     endpoint="account"
 
+    def auth_filter(self):
+        from auth import get_profile
+        atts=get_profile()
+        if not atts['superuser']:
+            self.bundle=self.acl_filter(atts['username'],self.bundle)
+        return self.bundle
+    
+    def acl_filter(self,username="unauth",bundle=None):
+        if not bundle:
+            bundle=self.bundle
+        if type(bundle)==cursor.Cursor:
+            bundle=list(bundle)
+            for obj in bundle[:]:
+                if obj["username"] != username:
+                    bundle.remove(obj)
+        elif bundle["username"] != username:
+                bundle={}
+        # need student filtering by course
+        return bundle
+
+    def acl_check(self,bundle=None):
+        from auth import get_profile
+        atts=get_profile()
+        return atts['superuser']
+
     def post(self,pid=None):
-        self.bundle=self.model()
-        if not pid:
-            if "username" in self.request.json:
-                self.bundle["_id"]=ObjectId(self.request.json.username)
+        if self.acl_check():
+            self.bundle=self.model()
+            if not pid:
+                if "username" in self.request.json:
+                    self.bundle["_id"]=ObjectId(self.request.json.username)
+                else:
+                    return bundle_400()
             else:
-                return bundle_400()
+                self.bundle["_id"]=ObjectId(pid)
+            self.preprocess_bundle()
+            self.set_attrs()
+            return self.save_bundle()
         else:
-            self.bundle["_id"]=ObjectId(pid)
-        self.preprocess_bundle()
-        self.set_attrs()
-        return self.save_bundle()
+            return action_401()
     
     def set_query(self):
         q={}
