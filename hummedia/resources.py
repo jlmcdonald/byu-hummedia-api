@@ -79,7 +79,7 @@ class MediaAsset(Resource):
         
     def get_list(self):
         alist=[]
-        self.auth_filter()
+        self.bundle=self.auth_filter()
         for d in self.bundle:
             alist.append(self.model.make_part(d["@graph"],config.APIHOST,self.request.args.get("part","details")))
         return mongo_jsonify(alist)
@@ -180,7 +180,7 @@ class AssetGroup(Resource):
         
     def get_list(self):
         alist=[]
-        self.auth_filter()
+        self.bundle=self.auth_filter()
         if self.bundle:
             for d in self.bundle:
                 d["@graph"]["resource"]=uri_pattern(d["@graph"]["pid"],config.APIHOST+"/"+self.endpoint)
@@ -237,7 +237,7 @@ class Annotation(Resource):
         
     def get_list(self):
         alist=[]
-        self.auth_filter()
+        self.bundle=self.auth_filter()
         for d in self.bundle:
             d["@graph"]["resource"]=uri_pattern(d["@graph"]["pid"],config.APIHOST+"/"+self.endpoint)
             alist.append(d["@graph"])

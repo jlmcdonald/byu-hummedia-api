@@ -67,15 +67,21 @@ class Resource():
 
     def patch(self,id):
         self.bundle=self.model.find_one({'_id': ObjectId(id)})
-        self.set_attrs()
-        return self.save_bundle()
+        if self.acl_check(self.bundle):
+            self.set_attrs()
+            return self.save_bundle()
+        else:
+            return action_401()
 
     def post(self,id=None):
-        self.bundle=self.model()
-        self.bundle["_id"]=ObjectId(id)
-        self.preprocess_bundle()
-        self.set_attrs()
-        return self.save_bundle()
+        if self.acl_check():
+            self.bundle=self.model()
+            self.bundle["_id"]=ObjectId(id)
+            self.preprocess_bundle()
+            self.set_attrs()
+            return self.save_bundle()
+        else:
+            return action_401()
 
     def put(self,id):
         return self.post(id)
@@ -104,31 +110,44 @@ class Resource():
     def delete(self,id):
         self.bundle=self.model.find_one({'_id': ObjectId(id)})
         return self.delete_obj()
-        
+
+    def acl_check(self,bundle=None):
+        from auth import get_profile
+        atts=get_profile()
+        if atts['superuser'] or (atts['role']=="faculty" and not bundle) or bundle["@graph"]["dc:creator"]==atts['username'] or atts['username'] in bundle['@graph']["dc:rights"]["write"]:
+            return True
+        else:
+            return False
+   
     def auth_filter(self,bundle=None):
         from auth import get_profile
         atts=get_profile()
         if not atts['username']:
-            self.acl_filter(bundle=bundle)
+            filtered_bundle=self.acl_filter(bundle=bundle)
         elif not atts['superuser']:
-            if atts['role']=="faculty":
-                self.acl_filter(["public","BYU"],atts['username'],atts['role'],bundle)
-            else:
-                pass # filter by course
-        return bundle
+            filtered_bundle=self.acl_filter(["public","BYU"],atts['username'],atts['role'],bundle)
+        else:
+            filtered_bundle=bundle if bundle else self.bundle
+        return filtered_bundle
     
     def acl_filter(self,allowed=["public"],username="unauth",role=None,bundle=None):
         if not bundle:
             bundle=self.bundle
+            child_bundle=False
+        else:
+            child_bundle=True
         if type(bundle)==cursor.Cursor:
             bundle=list(bundle)
             for obj in bundle[:]:
-                if obj["@graph"]["dc:coverage"] not in allowed and username not in obj["@graph"]["dc:rights"]["read"]:
-                    if role!="faculty" or (role=="faculty" and obj["@graph"]["dc:creator"]!=username):
+                if child_bundle and (self.bundle["@graph"]["dc:coverage"] in allowed or username in self.bundle["@graph"]["dc:rights"]["read"]):
+                    pass
+                elif obj["@graph"]["dc:coverage"] not in allowed and username not in obj["@graph"]["dc:rights"]["read"]:
+                    if obj["@graph"]["dc:creator"]!=username:
                         bundle.remove(obj)
         elif bundle["@graph"]["dc:coverage"] not in allowed and username not in bundle["@graph"]["dc:rights"]["read"]:
-            if role!="faculty" or (role=="faculty" and bundle["@graph"]["dc:creator"]!=username):
+            if bundle["@graph"]["dc:creator"]!=username:
                 bundle={}
+        # need student filtering by course
         return bundle               
         
     def get_bundle(self,q):
@@ -252,7 +271,10 @@ def endpoint_404():
     return Response("That service does not exist",status=404,mimetype="text/plain")
 
 def bundle_400(e):
-    return Response(e,status=400,mimetype="text/plain")  
+    return Response(e,status=400,mimetype="text/plain")
+
+def action_401():
+    return Response("You do not have permission to perform that action.",status=401,mimetype="text/plain")
 
 def plain_resp(obj):
     return Response(obj,status=200,mimetype="text/plain")
