@@ -36,16 +36,15 @@ class UserProfile(Resource):
                     bundle.remove(obj)
         elif bundle["username"] != username:
                 bundle={}
-        # need student filtering by course
         return bundle
 
-    def acl_check(self,bundle=None):
+    def acl_write_check(self,bundle=None):
         from auth import get_profile
         atts=get_profile()
         return atts['superuser']
 
     def post(self,pid=None):
-        if self.acl_check():
+        if self.acl_write_check():
             self.bundle=self.model()
             if not pid:
                 if "username" in self.request.json:
@@ -203,7 +202,7 @@ class AssetGroup(Resource):
     endpoint="collection"
     
     def set_query(self):
-        q={"@graph.dc:creator":self.request.args.get("dc:creator")} if "dc:creator" is self.request.args else {}
+        q={"@graph.dc:creator":self.request.args.get("dc:creator")} if "dc:creator" in self.request.args else {}
         return q
         
     def get_list(self):

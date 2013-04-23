@@ -67,14 +67,14 @@ class Resource():
 
     def patch(self,id):
         self.bundle=self.model.find_one({'_id': ObjectId(id)})
-        if self.acl_check(self.bundle):
+        if self.acl_write_check(self.bundle):
             self.set_attrs()
             return self.save_bundle()
         else:
             return action_401()
 
     def post(self,id=None):
-        if self.acl_check():
+        if self.acl_write_check():
             self.bundle=self.model()
             self.bundle["_id"]=ObjectId(id)
             self.preprocess_bundle()
@@ -95,8 +95,10 @@ class Resource():
                 return bundle_400("The ID you submitted is malformed.")
             self.bundle=self.get_bundle(q)
             if self.bundle:
+                self.bundle=self.auth_filter(self.bundle)
+                if not self.bundle:
+                    return action_401()
                 self.set_resource()
-                self.auth_filter()
                 if self.request.args.get("client",None):
                     return self.client_process()
                 else:
@@ -108,18 +110,25 @@ class Resource():
             return self.get_list()
 
     def delete(self,id):
-        self.bundle=self.model.find_one({'_id': ObjectId(id)})
-        return self.delete_obj()
+        if self.acl_write_check():
+            self.bundle=self.model.find_one({'_id': ObjectId(id)})
+            return self.delete_obj()
+        else:
+            return action_401()
 
-    def acl_check(self,bundle=None):
+    def acl_read_check(self,obj,username,allowed,is_nested_obj=False):
+        if is_nested_obj and (obj["@graph"]["dc:coverage"] in allowed or username in obj["@graph"]["dc:rights"]["read"]):
+            return True
+        if obj["@graph"]["dc:coverage"] in allowed or username in obj["@graph"]["dc:rights"]["read"] or obj["@graph"]["dc:creator"]==username:
+            return True
+        return False
+
+    def acl_write_check(self,bundle=None):
         from auth import get_profile
         atts=get_profile()
-        if atts['superuser'] or (atts['role']=="faculty" and not bundle) or bundle["@graph"]["dc:creator"]==atts['username'] or atts['username'] in bundle['@graph']["dc:rights"]["write"]:
-            return True
-        else:
-            return False
+        return atts['superuser'] or (atts['role']=="faculty" and not bundle) or bundle["@graph"]["dc:creator"]==atts['username'] or atts['username'] in bundle['@graph']["dc:rights"]["write"]   
    
-    def auth_filter(self,bundle=None):
+    def auth_filter(self,bundle=None,atts=None):
         from auth import get_profile
         atts=get_profile()
         if not atts['username']:
@@ -133,28 +142,21 @@ class Resource():
     def acl_filter(self,allowed=["public"],username="unauth",role=None,bundle=None):
         if not bundle:
             bundle=self.bundle
-            child_bundle=False
-        else:
-            child_bundle=True
         if type(bundle)==cursor.Cursor:
             bundle=list(bundle)
             for obj in bundle[:]:
-                if child_bundle and (self.bundle["@graph"]["dc:coverage"] in allowed or username in self.bundle["@graph"]["dc:rights"]["read"]):
-                    pass
-                elif obj["@graph"]["dc:coverage"] not in allowed and username not in obj["@graph"]["dc:rights"]["read"]:
-                    if obj["@graph"]["dc:creator"]!=username:
-                        bundle.remove(obj)
-        elif bundle["@graph"]["dc:coverage"] not in allowed and username not in bundle["@graph"]["dc:rights"]["read"]:
-            if bundle["@graph"]["dc:creator"]!=username:
-                bundle={}
-        # need student filtering by course
+                if not self.acl_read_check(obj,username,allowed):
+                    bundle.remove(obj)
+        elif not self.acl_read_check(bundle,username,allowed):
+            bundle={}
+        # need student filtering by course -- they can see course collections, and their videos, if enrolled. also need to allow faculty to see private videos
         return bundle               
         
     def get_bundle(self,q):
         return self.collection.find_one(q)
 
     def get_list(self):
-        self.auth_filter()
+        self.bundle=self.auth_filter()
         return mongo_jsonify(list(self.bundle))
 
     def serialize_bundle(self,payload):
