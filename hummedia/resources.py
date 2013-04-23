@@ -19,11 +19,12 @@ class UserProfile(Resource):
     namespace="hummedia:id/user"
     endpoint="account"
 
-    def auth_filter(self):
+    def auth_filter(self,bundle=None):
         from auth import get_profile
         atts=get_profile()
         if not atts['superuser']:
-            self.bundle=self.acl_filter(atts['username'],self.bundle)
+            bundle=self.acl_filter(atts['username'],bundle)
+            self.bundle=bundle
         return self.bundle
     
     def acl_filter(self,username="unauth",bundle=None):
