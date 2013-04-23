@@ -187,7 +187,7 @@ class Resource():
     def save_bundle(self):
         try:
             self.bundle.save()
-            return jsonify({"success":True,"id":str(self.bundle["_id"])})
+            return self.get(self.bundle["_id"])
         except Exception as e:
             return bundle_400("The request was malformed: %s" % (e))
     
