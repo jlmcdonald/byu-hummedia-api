@@ -8,8 +8,8 @@ from providers import *
 import json, config
 
 from hummedia import app
-app.secret_key=config.SECRET_KEY # signs the session. Changing this invalidates any sessions out in the wild.
-
+app.config['SECRET_KEY']=config.SECRET_KEY
+app.config['SESSION_COOKIE_DOMAIN']=config.SESSION_COOKIE_DOMAIN
 provider_lookup={"google":GoogleOAuth2,"cas":CasAuth}
 oAuthService = provider_lookup["google"]("google") # done this way so eventually we can have multiple providers ... for now, it's hard coded
 cas = provider_lookup["cas"]()
