@@ -232,6 +232,9 @@ def crossdomain(origin=None, methods=None, headers=None, credentials=False,
     if isinstance(max_age, timedelta):
         max_age = max_age.total_seconds()
 
+    def get_origin():
+        return request.headers.get('Origin')
+
     def get_methods():
         if methods is not None:
             return methods
@@ -251,8 +254,8 @@ def crossdomain(origin=None, methods=None, headers=None, credentials=False,
             h = resp.headers
             if origin=="*":
                 h['Access-Control-Allow-Origin'] = origin
-            elif request.headers['Origin'] in origin:
-                h['Access-Control-Allow-Origin'] = request.headers['Origin']
+            else:
+                h['Access-Control-Allow-Origin'] = get_origin()   
                 if credentials:
                     h['Access-Control-Allow-Credentials'] = "true"
             h['Access-Control-Allow-Methods'] = get_methods()
