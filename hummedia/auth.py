@@ -6,6 +6,7 @@ from base64 import b64encode
 import urllib, urlparse, hmac
 from providers import *
 import json, config
+from helpers import crossdomain
 
 from hummedia import app
 app.config['SECRET_KEY']=config.SECRET_KEY
@@ -144,6 +145,7 @@ def apiLogin(providerService="cas"):
         return redirect(cas.login_url(config.APIHOST+config.REDIRECT_URI))
         
 @app.route('/account/logout',methods=['GET'])
+@crossdomain(origin='*',headers=['origin','x-requested-with','accept','Content-Type'])
 def apiLogout():
     if "username" in session:
         session.pop('username')
@@ -169,5 +171,6 @@ def authorized(resp):
     return auth_redirect(provider=provider)
 
 @app.route('/account/profile',methods=['GET'])
+@crossdomain(origin='*',headers=['origin','x-requested-with','accept','Content-Type'])
 def profile():
     return jsonify(get_profile())
