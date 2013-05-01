@@ -54,7 +54,7 @@ class Popcorn_Client():
     	   })
         popcorn["media"].append({
         	"id": media["pid"],
-        	"url": [media["url"]],
+        	"url": media["url"],
         	"duration": media["ma:duration"],
         	"name": media["ma:title"],
         	"target": "player",

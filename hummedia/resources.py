@@ -279,10 +279,14 @@ class Annotation(Resource):
         m=assets.find_one(self.bundle["@graph"]["dc:relation"])
         m["@graph"]["resource"]=uri_pattern(m["@graph"]["pid"],config.APIHOST+"/video")
         m["@graph"]["type"]=resolve_type(m["@graph"]["dc:type"])
-        if m["@graph"]["type"]=="humvideo":
-            m["@graph"]["url"]=uri_pattern(m["@graph"]["ma:locator"],config.HOST+"/video")
-        elif m["@graph"]["type"]=="yt":
-            m["@graph"]["url"]=uri_pattern(m["@graph"]["ma:locator"],"http://youtu.be")
+        m["@graph"]["url"]=[]
+        for url in m["@graph"]["ma:locator"]:
+            ext=url["ma:hasFormat"].replace("video/","")
+            if m["@graph"]["type"]=="humvideo":
+                host=config.HOST+"/video"
+            elif m["@graph"]["type"]=="yt":
+                host="http://youtu.be"
+            m["@graph"]["url"].append(uri_pattern(url["@id"]+"."+ext,host))
         return c.serialize(self.bundle["@graph"],m["@graph"])
 
     def preprocess_bundle(self):
