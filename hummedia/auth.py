@@ -6,10 +6,12 @@ from base64 import b64encode
 import urllib, urlparse, hmac
 from providers import *
 import json, config
-from helpers import crossdomain
+from helpers import crossdomain, plain_resp
+from interfaces import ItsdangerousSessionInterface
 
 from hummedia import app
-app.config['SECRET_KEY']=config.SECRET_KEY
+app.session_interface = ItsdangerousSessionInterface()
+app.secret_key=config.SECRET_KEY
 app.config['SESSION_COOKIE_DOMAIN']=config.SESSION_COOKIE_DOMAIN
 provider_lookup={"google":GoogleOAuth2,"cas":CasAuth}
 oAuthService = provider_lookup["google"]("google") # done this way so eventually we can have multiple providers ... for now, it's hard coded
@@ -151,7 +153,7 @@ def apiLogout():
         session.pop('username')
     r=request.args.get("r",get_redirect_url())
     session.clear()
-    return "logout successful"
+    return plain_resp("logout successful")
 
 @app.route(config.REDIRECT_URI)
 @provider.authorized_handler
@@ -171,6 +173,6 @@ def authorized(resp):
     return auth_redirect(provider=provider)
 
 @app.route('/account/profile',methods=['GET'])
-@crossdomain(origin='*',headers=['origin','x-requested-with','accept','Content-Type'])
+@crossdomain(origin=['http://hlrdev.byu.edu','https://hlrdev.byu.edu','http://ian.byu.edu','https://ian.byu.edu'],headers=['origin','x-requested-with','accept','Content-Type'],credentials=True)
 def profile():
     return jsonify(get_profile())

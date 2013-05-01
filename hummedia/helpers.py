@@ -220,15 +220,15 @@ class mongokitJSON(json.JSONEncoder):
 def get_auth():
     return [get_user(),get_role(),is_superuser()]
 
-def crossdomain(origin=None, methods=None, headers=None,
+def crossdomain(origin=None, methods=None, headers=None, credentials=False,
                 max_age=21600, attach_to_all=True,
                 automatic_options=True,nocache=True):
     if methods is not None:
         methods = ', '.join(sorted(x.upper() for x in methods))
     if headers is not None and not isinstance(headers, basestring):
         headers = ', '.join(x.upper() for x in headers)
-    if not isinstance(origin, basestring):
-        origin = ', '.join(origin)
+    #if not isinstance(origin, basestring):
+    #    origin = ', '.join(origin)
     if isinstance(max_age, timedelta):
         max_age = max_age.total_seconds()
 
@@ -249,8 +249,12 @@ def crossdomain(origin=None, methods=None, headers=None,
                 return resp
 
             h = resp.headers
-
-            h['Access-Control-Allow-Origin'] = origin
+            if origin=="*":
+                h['Access-Control-Allow-Origin'] = origin
+            elif request.headers['Origin'] in origin:
+                h['Access-Control-Allow-Origin'] = request.headers['Origin']
+                if credentials:
+                    h['Access-Control-Allow-Credentials'] = "true"
             h['Access-Control-Allow-Methods'] = get_methods()
             h['Access-Control-Max-Age'] = str(max_age)
             if headers is not None:
