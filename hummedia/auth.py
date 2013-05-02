@@ -148,7 +148,7 @@ def apiLogin(providerService="cas"):
         return redirect(cas.login_url(config.APIHOST+config.REDIRECT_URI))
         
 @app.route('/account/logout',methods=['GET','OPTIONS'])
-@crossdomain(origin='*',headers=['origin','x-requested-with','accept','Content-Type'])
+@crossdomain(origin=['http://hlrdev.byu.edu','https://hlrdev.byu.edu','http://ian.byu.edu','https://ian.byu.edu'],headers=['Origin','x-requested-with','accept','Content-Type'])
 def apiLogout():
     if "username" in session:
         session.pop('username')
@@ -174,6 +174,6 @@ def authorized(resp):
     return auth_redirect(provider=provider)
 
 @app.route('/account/profile',methods=['GET','OPTIONS'])
-@crossdomain(origin="['http://hlrdev.byu.edu','https://hlrdev.byu.edu','http://ian.byu.edu','https://ian.byu.edu']",headers=['Origin','x-requested-with','accept','Content-Type'],credentials=True)
+@crossdomain(origin=['http://hlrdev.byu.edu','https://hlrdev.byu.edu','http://ian.byu.edu','https://ian.byu.edu'],headers=['Origin','x-requested-with','accept','Content-Type'],credentials=True)
 def profile():
     return jsonify(get_profile())
