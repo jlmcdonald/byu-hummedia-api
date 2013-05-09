@@ -3,7 +3,7 @@ import json, helpers
 
 class Popcorn_Client():
     def deserialize(self,request):
-        types={"reference":"oax:classification","modal":"oax:description"}
+        types={"reference":"oax:classification","modal":"oax:description","comment":"oax:comment"}
         packet={}
         if "id" in request.json["media"][0]:
             packet["dc:relation"]=request.json["media"][0]["id"]
@@ -43,7 +43,7 @@ class Popcorn_Client():
         return packet                
     
     def serialize(self,obj,media):
-        types={"oax:classification": "reference","oax:description":"modal"}
+        types={"oax:classification": "reference","oax:description":"modal","oax:comment":"comment"}
         popcorn={"targets":[],"media":[],"creator": obj["dc:creator"]}
         targets=["main","_caption","popup","sidebar"]
         for i in range(0,len(targets)):

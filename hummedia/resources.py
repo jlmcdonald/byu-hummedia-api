@@ -281,12 +281,13 @@ class Annotation(Resource):
         m["@graph"]["type"]=resolve_type(m["@graph"]["dc:type"])
         m["@graph"]["url"]=[]
         for url in m["@graph"]["ma:locator"]:
-            ext=url["ma:hasFormat"].replace("video/","")
             if m["@graph"]["type"]=="humvideo":
                 host=config.HOST+"/video"
+                ext="."+url["ma:hasFormat"].replace("video/","")
             elif m["@graph"]["type"]=="yt":
                 host="http://youtu.be"
-            m["@graph"]["url"].append(uri_pattern(url["@id"]+"."+ext,host))
+                ext=""
+            m["@graph"]["url"].append(uri_pattern(url["@id"]+ext,host))
         return c.serialize(self.bundle["@graph"],m["@graph"])
 
     def preprocess_bundle(self):
