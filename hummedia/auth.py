@@ -34,7 +34,7 @@ def superuser():
     
 def get_profile():
     atts={}
-    for att in ['username','role','superuser','fullname']:
+    for att in ['username','role','superuser','fullname','preferredLanguage']:
         atts[att]=session.get(att)
     if (atts['username'] is None or atts['username']=="") and session.get('oauth'):
 	atts['oauth']=session.get('oauth')['provider']
@@ -50,7 +50,7 @@ def get_redirect_url():
     return urlparse.urlunparse(url_parts)
   
 def set_session_vars(user):
-    for att in ('username','role','superuser','fullname'):
+    for att in ('username','role','superuser','fullname','preferredLanguage'):
         session[att]=user[att]
 
 def make_token_header():
