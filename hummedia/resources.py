@@ -27,6 +27,12 @@ class UserProfile(Resource):
             self.bundle=bundle
         return self.bundle
     
+    def set_disallowed_atts(self):
+        from auth import get_profile
+        atts=get_profile()
+        if not atts['superuser']:
+            self.disallowed_atts=['role','superuser']
+        
     def acl_filter(self,username="unauth",bundle=None):
         if not bundle:
             bundle=self.bundle
@@ -77,6 +83,13 @@ class MediaAsset(Resource):
     namespace="hummedia:id/video"
     endpoint="video"
     
+    def set_disallowed_atts(self):
+        self.disallowed_atts=["dc:identifier","pid","dc:type"]
+        from auth import get_profile
+        atts=get_profile()
+        if not atts['superuser']:
+            self.disallowed_atts.append("dc:creator")
+    
     def set_query(self):
         q={}
         v=self.request.args.get("q",False)
@@ -118,6 +131,10 @@ class MediaAsset(Resource):
     def preprocess_bundle(self):
         self.bundle["@graph"]["dc:identifier"] = "%s/%s" % (self.namespace,str(self.bundle["_id"]))
         self.bundle["@graph"]["pid"] = str(self.bundle["_id"])
+        from auth import get_profile
+        atts=get_profile()
+        if not atts['superuser']:
+            self.bundle["@graph"]["dc:creator"]=atts['username']
         
     def serialize_bundle(self,payload):
         if self.request.args.get("annotations",False):
@@ -148,7 +165,7 @@ class MediaAsset(Resource):
         if "type" in self.request.json:
             self.bundle["@graph"]["dc:type"]="hummedia:type/"+self.request.json["type"]
         for (k,v) in self.request.json.items():
-            if (k in self.model.structure['@graph'] and k not in ["dc:identifier","pid","dc:type"]):
+            if k in self.model.structure['@graph'] and k not in self.disallowed_atts:
                 if k in ["ma:features","ma:contributor"]:
                     for i in v:
                         self.bundle["@graph"][k].append({"@id":i["@id"],"name":unicode(i[k])})
@@ -196,6 +213,15 @@ class MediaAsset(Resource):
                         loc["ma:hasCompression"]={"@id":"http://www.freebase.com/m/0c02yk5","name":"vp8.0"}
                     self.bundle["@graph"]["ma:locator"].append(loc)
 
+    def delete(self,id):
+        from auth import get_profile
+        atts=get_profile()
+        if atts['superuser']:
+            self.bundle=self.model.find_one({'_id': ObjectId(id)})
+            return self.delete_obj()
+        else:
+            return action_401()
+            
 class AssetGroup(Resource):
     collection=ags
     model=ags.AssetGroup
@@ -222,6 +248,10 @@ class AssetGroup(Resource):
     def preprocess_bundle(self):
         self.bundle["@graph"]["dc:identifier"] = "%s/%s" % (self.namespace,str(self.bundle["_id"]))
         self.bundle["@graph"]["pid"] = str(self.bundle["_id"])
+        from auth import get_profile
+        atts=get_profile()
+        if not atts['superuser']:
+            self.bundle["@graph"]["dc:creator"]=atts['username']
         
     def serialize_bundle(self,payload):
         if payload:
@@ -240,12 +270,19 @@ class AssetGroup(Resource):
             return mongo_jsonify(payload["@graph"])
         else:
             return mongo_jsonify({})
+            
+    def set_disallowed_atts(self):
+        self.disallowed_atts=["dc:identifier","pid","dc:type"]
+        from auth import get_profile
+        atts=get_profile()
+        if not atts['superuser']:
+            self.disallowed_atts.append("dc:creator")
     
     def set_attrs(self):
         if "type" in self.request.json:
             self.bundle["@graph"]["dc:type"]="hummedia:type/"+self.request.json["type"]
         for (k,v) in self.request.json.items():
-            if k in self.model.structure['@graph'] and k not in ["dc:identifier","pid","dc:type"]:
+            if k in self.model.structure['@graph'] and k not in self.disallowed_atts:
                 self.bundle["@graph"][k]=unicode(v) if k in ["dc:title","dc:description"] else v
 
 class Annotation(Resource):
@@ -293,9 +330,19 @@ class Annotation(Resource):
     def preprocess_bundle(self):
         self.bundle["@graph"]["dc:identifier"] = "%s/%s" % (self.namespace,str(self.bundle["_id"]))
         self.bundle["@graph"]["pid"] = str(self.bundle["_id"])
+        from auth import get_profile
+        atts=get_profile()
+        if not atts['superuser']:
+            self.bundle["@graph"]["dc:creator"]=atts['username']
         
     def serialize_bundle(self,payload):
         return mongo_jsonify(payload["@graph"])
+        
+    def set_disallowed_atts(self):
+        from auth import get_profile
+        atts=get_profile()
+        if not atts['superuser']:
+            self.disallowed_atts.append("dc:creator")
     
     def set_attrs(self):
         if "client" in self.request.args:

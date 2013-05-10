@@ -48,6 +48,7 @@ class Resource():
     request=None
     part=None
     manual_request={}
+    disallowed_atts=[]
     
     def __init__(self,request=None,bundle=None, client=None,**kwargs):
         if bundle:
@@ -61,9 +62,13 @@ class Resource():
             self.request=request
         else:
             self.manual_request=kwargs
+        self.set_disallowed_atts()
     
     if not model:
         raise NoModelException("You have to declare the model for the resource")
+
+    def set_disallowed_atts(self):
+        pass
 
     def patch(self,id):
         self.bundle=self.model.find_one({'_id': ObjectId(id)})
@@ -126,7 +131,7 @@ class Resource():
     def acl_write_check(self,bundle=None):
         from auth import get_profile
         atts=get_profile()
-        return atts['superuser'] or (atts['role']=="faculty" and not bundle) or bundle["@graph"]["dc:creator"]==atts['username'] or atts['username'] in bundle['@graph']["dc:rights"]["write"]   
+        return atts['superuser'] or (atts['role']=='faculty' and not bundle) or (atts['role']=="faculty" and bundle["@graph"]["dc:creator"]==atts['username']) or atts['username'] in bundle['@graph']["dc:rights"]["write"]
    
     def auth_filter(self,bundle=None,atts=None):
         from auth import get_profile
@@ -167,7 +172,7 @@ class Resource():
 
     def set_attrs(self):
         for (k,v) in self.request.json.items():
-            if k in self.model.structure:
+            if k in self.model.structure and k not in self.disallowed_atts:
                 if self.model.structure[k]==type(2):
                     self.bundle[k]=int(v)
                 elif self.model.structure[k]==type(2.0):

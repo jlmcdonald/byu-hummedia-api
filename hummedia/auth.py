@@ -112,7 +112,8 @@ def get_user_from_cas(netid=None,atts=None):
     user.save()
     set_session_vars(user)
     return {"user":get_user()}
-    
+
+@crossdomain(origin=['http://hlrdev.byu.edu','https://hlrdev.byu.edu','http://ian.byu.edu','https://ian.byu.edu'],headers=['Origin','x-requested-with','accept','Content-Type', 'Authorization'],credentials=True)
 def auth_redirect(provider="cas",authUser=None):
     if provider=="google":
         th=make_token_header()
