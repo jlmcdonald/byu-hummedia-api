@@ -2,7 +2,7 @@ from datetime import datetime
 from os.path import splitext
 from models import connection
 from flask import Response, jsonify
-from helpers import Resource, mongo_jsonify, parse_npt, resolve_type, uri_pattern, bundle_400, action_401
+from helpers import Resource, mongo_jsonify, parse_npt, resolve_type, uri_pattern, bundle_400, action_401, is_enrolled
 from mongokit import ObjectId, cursor
 from urlparse import urlparse, parse_qs
 import clients, config
@@ -82,6 +82,7 @@ class MediaAsset(Resource):
     model=assets.Video
     namespace="hummedia:id/video"
     endpoint="video"
+    override_only_triggers=['enrollment']
     
     def set_disallowed_atts(self):
         self.disallowed_atts=["dc:identifier","pid","dc:type"]
@@ -114,7 +115,7 @@ class MediaAsset(Resource):
                     q["ititle"]=cire
                 elif k in ["ma:description","ma:hasKeyword"]:
                     q["@graph."+k]=cire
-                elif k not in ["yearfrom","yearto","ma:date","part"]:
+                elif k not in ["yearfrom","yearto","ma:date","part","inhibitor"]:
                     q["@graph."+k]=v
         return q
         
@@ -135,6 +136,15 @@ class MediaAsset(Resource):
         atts=get_profile()
         if not atts['superuser']:
             self.bundle["@graph"]["dc:creator"]=atts['username']
+
+    def read_override(self,obj,username,role):
+        allowed=False
+        for parent in obj['@graph']['ma:isMemberOf']:
+            c=ags.find_one({"_id":ObjectId(parent.get("@id"))})
+            if c:
+                if is_enrolled(username,c):
+                    allowed=True
+        return allowed
         
     def serialize_bundle(self,payload):
         if self.request.args.get("annotations",False):
@@ -227,6 +237,7 @@ class AssetGroup(Resource):
     model=ags.AssetGroup
     namespace="hummedia:id/collection"
     endpoint="collection"
+    override_only_triggers=['enrollment']
     
     def set_query(self):
         q={"@graph.dc:creator":self.request.args.get("dc:creator")} if "dc:creator" in self.request.args else {}
@@ -244,7 +255,13 @@ class AssetGroup(Resource):
         
     def set_resource(self):
         self.bundle["@graph"]["resource"]=uri_pattern(self.bundle["@graph"]["pid"],config.APIHOST+"/"+self.endpoint)
-
+        
+    def read_override(self,obj,username,role):
+        if role=="student" and is_enrolled(username,obj):
+            return True
+        else:
+            return False
+            
     def preprocess_bundle(self):
         self.bundle["@graph"]["dc:identifier"] = "%s/%s" % (self.namespace,str(self.bundle["_id"]))
         self.bundle["@graph"]["pid"] = str(self.bundle["_id"])
@@ -257,7 +274,10 @@ class AssetGroup(Resource):
         if payload:
             v=assets.find({"@graph.ma:isMemberOf.@id":payload["_id"]})
             payload["@graph"]["videos"]=[]
-            v=self.auth_filter(v)
+            from auth import get_profile
+            atts=get_profile()
+            if not is_enrolled(atts['username'],payload):
+                v=self.auth_filter(v)
             for vid in v:
                 if self.request.args.get("full",False):
                     resource=uri_pattern(vid["@graph"]["pid"],config.APIHOST+"/video")    

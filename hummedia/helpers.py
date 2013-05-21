@@ -49,6 +49,8 @@ class Resource():
     part=None
     manual_request={}
     disallowed_atts=[]
+    override_only_triggers=[]
+    override_only=False
     
     def __init__(self,request=None,bundle=None, client=None,**kwargs):
         if bundle:
@@ -63,6 +65,8 @@ class Resource():
         else:
             self.manual_request=kwargs
         self.set_disallowed_atts()
+        if request.args.get('inhibitor') in self.override_only_triggers:
+                self.override_only=True
     
     if not model:
         raise NoModelException("You have to declare the model for the resource")
@@ -121,11 +125,17 @@ class Resource():
         else:
             return action_401()
 
-    def acl_read_check(self,obj,username,allowed,is_nested_obj=False):
-        if is_nested_obj and (obj["@graph"]["dc:coverage"] in allowed or username in obj["@graph"]["dc:rights"]["read"]):
+    def acl_read_check(self,obj,username,allowed,is_nested_obj=False,role="student"):
+        if self.read_override(obj,username,role):
             return True
-        if obj["@graph"]["dc:coverage"] in allowed or username in obj["@graph"]["dc:rights"]["read"] or obj["@graph"]["dc:creator"]==username:
-            return True
+        if not self.override_only:
+            if is_nested_obj and (obj["@graph"]["dc:coverage"] in allowed or username in obj["@graph"]["dc:rights"]["read"]):
+                return True
+            elif obj["@graph"]["dc:coverage"] in allowed or username in obj["@graph"]["dc:rights"]["read"] or obj["@graph"]["dc:creator"]==username:
+                return True
+        return False
+        
+    def read_override(self,obj,username,role):
         return False
 
     def acl_write_check(self,bundle=None):
@@ -133,7 +143,7 @@ class Resource():
         atts=get_profile()
         return atts['superuser'] or (atts['role']=='faculty' and not bundle) or (atts['role']=="faculty" and bundle["@graph"]["dc:creator"]==atts['username']) or atts['username'] in bundle['@graph']["dc:rights"]["write"]
    
-    def auth_filter(self,bundle=None,atts=None):
+    def auth_filter(self,bundle=None):
         from auth import get_profile
         atts=get_profile()
         if not atts['username']:
@@ -150,12 +160,15 @@ class Resource():
         if type(bundle)==cursor.Cursor:
             bundle=list(bundle)
             for obj in bundle[:]:
-                if not self.acl_read_check(obj,username,allowed):
+                if not self.acl_read_check(obj,username,allowed,role):
                     bundle.remove(obj)
-        elif not self.acl_read_check(bundle,username,allowed):
+        elif not self.acl_read_check(bundle,username,allowed,role):
             bundle={}
         # need student filtering by course -- they can see course collections, and their videos, if enrolled. also need to allow faculty to see private videos
-        return bundle               
+        return bundle
+    
+    def retain(self,obj,username):
+        return False
         
     def get_bundle(self,q):
         return self.collection.find_one(q)
@@ -225,6 +238,12 @@ class mongokitJSON(json.JSONEncoder):
 def get_auth():
     return [get_user(),get_role(),is_superuser()]
 
+def is_enrolled(username,obj):
+    if obj["@graph"].get("dc:relation")=="DHT 390R 20135":
+        return True
+    else:
+        return False
+            
 def crossdomain(origin=None, methods=None, headers=None, credentials=False,
                 max_age=21600, attach_to_all=True,
                 automatic_options=True,nocache=True):
@@ -232,8 +251,6 @@ def crossdomain(origin=None, methods=None, headers=None, credentials=False,
         methods = ', '.join(sorted(x.upper() for x in methods))
     if headers is not None and not isinstance(headers, basestring):
         headers = ', '.join(x.upper() for x in headers)
-    #if not isinstance(origin, basestring):
-    #    origin = ', '.join(origin)
     if isinstance(max_age, timedelta):
         max_age = max_age.total_seconds()
 

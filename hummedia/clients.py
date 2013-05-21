@@ -69,7 +69,7 @@ class Popcorn_Client():
                     event["popcornOptions"]["target"]=command["oa:hasBody"]["target"] if "target" in command["oa:hasBody"] else command["oax:hasSemanticTag"]
                 else:
                     event["popcornOptions"]["target"]="main"
-                if event["type"]in ("reference","modal"):
+                if event["type"]in ("reference","modal","comment"):
                     event["popcornOptions"]["item"]=command["oa:hasBody"]["dc:title"]
                     event["popcornOptions"]["text"]=command["oa:hasBody"]["content"]
                 if event["type"]=="reference":
