@@ -2,7 +2,7 @@ from datetime import datetime
 from os.path import splitext
 from models import connection
 from flask import Response, jsonify
-from helpers import Resource, mongo_jsonify, parse_npt, resolve_type, uri_pattern, bundle_400, action_401, is_enrolled
+from helpers import Resource, mongo_jsonify, parse_npt, resolve_type, uri_pattern, bundle_400, action_401, is_enrolled, getYtThumbs
 from mongokit import ObjectId, cursor
 from urlparse import urlparse, parse_qs
 import clients, config
@@ -172,6 +172,7 @@ class MediaAsset(Resource):
                 thumb=uri_pattern(location["@id"]+"_thumb.png",config.HOST+"/posters")
             else:
                 loc=location["@id"]
+                poster,thumb=getYtThumbs(loc)
             payload["@graph"]["url"].append(uri_pattern(loc,prefix))
             payload["@graph"]["ma:image"].append({"poster":poster,"thumb":thumb})
         return mongo_jsonify(payload["@graph"])
@@ -186,7 +187,6 @@ class MediaAsset(Resource):
                         self.bundle["@graph"][k].append({"@id":i["@id"],"name":unicode(i[k])})
                 elif k in ["ma:isCopyrightedBy","ma:hasGenre"]:
                     self.bundle["@graph"][k]={"@id":v["@id"],"name":unicode(v["name"]) if v["name"] is not None else v["name"] }
-                    #self.bundle["@graph"][k]=ObjectId(v)
                 elif self.model.structure['@graph'][k]==type(u""):
                     self.bundle["@graph"][k]=unicode(v)
                 elif k=="ma:title":
@@ -293,6 +293,19 @@ class AssetGroup(Resource):
                     resource=uri_pattern(vid["@graph"]["pid"],config.APIHOST+"/video")    
                     vid["@graph"]["type"]=resolve_type(vid["@graph"]["dc:type"])
                     vid["@graph"]["resource"]=resource
+                    vid["@graph"]["ma:image"]=[]
+                    if vid["@graph"]["type"]=="humvideo":
+                        needs_ext=True
+                    elif vid["@graph"]["type"]=="yt":
+                        needs_ext=False
+                    for location in vid["@graph"]["ma:locator"]:
+                        if needs_ext:
+                            poster=uri_pattern(location["@id"]+".png",config.HOST+"/posters")
+                            thumb=uri_pattern(location["@id"]+"_thumb.png",config.HOST+"/posters")
+                        else:
+                            loc=location["@id"]
+                            poster,thumb=getYtThumbs(loc)
+                        vid["@graph"]["ma:image"].append({"poster":poster,"thumb":thumb})
                     payload["@graph"]['videos'].append(vid["@graph"])
                 else:
                     payload["@graph"]["videos"].append(assets.Video.make_part(vid["@graph"],config.APIHOST,self.request.args.get("part","details")))

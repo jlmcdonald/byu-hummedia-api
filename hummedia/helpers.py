@@ -4,7 +4,8 @@ from datetime import datetime, timedelta, date
 from functools import update_wrapper
 from mongokit import ObjectId, cursor 
 from models import connection
-from config import APIHOST
+from config import APIHOST, YT_SERVICE
+from urllib2 import Request, urlopen, URLError
 import json
 
 class NoModelException(Exception):
@@ -322,3 +323,16 @@ def resolve_type(t):
 
 def uri_pattern(id,host=""):
     return "%s/%s" % (host,id)
+
+def getYtThumbs(loc=None):
+    if loc:
+        req=Request(YT_SERVICE+"&id=%s" % (loc))
+        res=urlopen(req)
+        j=json.loads(res.read())
+        res.close()
+        poster=j["items"][0]["snippet"]["thumbnails"]["high"]["url"]
+        thumb=j["items"][0]["snippet"]["thumbnails"]["default"]["url"]
+    else:
+        poster=None
+        thumb=None
+    return poster,thumb
