@@ -140,7 +140,8 @@ class MediaAsset(Resource):
     def read_override(self,obj,username,role):
         allowed=False
         for parent in obj['@graph']['ma:isMemberOf']:
-            c=ags.find_one({"_id":ObjectId(parent.get("@id"))})
+            id=parent['@id'] if '@id' in parent else None
+            c=ags.find_one({"_id":ObjectId(id)})
             if c:
                 if is_enrolled(username,c):
                     allowed=True

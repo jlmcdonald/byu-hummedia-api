@@ -13,7 +13,6 @@ from os import environ
 from hummedia import app
 app.session_interface = ItsdangerousSessionInterface()
 app.secret_key=config.SECRET_KEY
-app.config['SESSION_COOKIE_DOMAIN']=config.SESSION_COOKIE_DOMAIN
 provider_lookup={"google":GoogleOAuth2,"cas":CasAuth}
 oAuthService = provider_lookup["google"]("google") # done this way so eventually we can have multiple providers ... for now, it's hard coded
 cas = provider_lookup["cas"]()
@@ -51,7 +50,8 @@ def get_redirect_url():
   
 def set_session_vars(user):
     for att in ('username','role','superuser','fullname','preferredLanguage'):
-        session[att]=user[att]
+        if att in user:
+            session[att]=user[att]
 
 def make_token_header():
     access_token = get_access_token()
