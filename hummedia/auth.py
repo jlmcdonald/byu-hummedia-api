@@ -11,7 +11,7 @@ from interfaces import ItsdangerousSessionInterface
 from os import environ
 
 from hummedia import app
-app.session_interface = ItsdangerousSessionInterface()
+#app.session_interface = ItsdangerousSessionInterface()
 app.secret_key=config.SECRET_KEY
 provider_lookup={"google":GoogleOAuth2,"cas":CasAuth}
 oAuthService = provider_lookup["google"]("google") # done this way so eventually we can have multiple providers ... for now, it's hard coded
@@ -86,8 +86,8 @@ def get_user_from_oauth(provider,atts,access_token=None):
     user=connection.User.find_one(q)
     if user is None:
         session["oauth"]={"provider":provider,"id":atts['id'],"access_token":access_token,"email":atts['email']}
-        user={"username":"","role":"","superuser":False,"fullname":""}
-    return {"username":user['username'],"role":user['role'],"superuser":user["superuser"],"fullname":user["fullname"]}
+        user={"username":"","role":"","superuser":False,"fullname":"","preferredLanguage":"en"}
+    return {"username":user['username'],"role":user['role'],"superuser":user["superuser"],"fullname":user["fullname"],"preferredLanguage":user["preferredLanguage"]}
     
 def get_user_from_cas(netid=None,atts=None):
     if not netid:

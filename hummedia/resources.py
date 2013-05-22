@@ -157,6 +157,7 @@ class MediaAsset(Resource):
         payload["@graph"]["resource"]=uri_pattern(payload["@graph"]["pid"],config.APIHOST+"/"+self.endpoint)    
         payload["@graph"]["type"]=resolve_type(payload["@graph"]["dc:type"])
         payload["@graph"]["url"]=[]
+        payload["@graph"]["ma:image"]=[]
         if payload["@graph"]["type"]=="humvideo":
             prefix=config.HOST+"/"+self.endpoint
             needs_ext=True
@@ -167,9 +168,12 @@ class MediaAsset(Resource):
             if needs_ext:
                 ext=location["ma:hasFormat"].split("/")[-1]
                 loc=".".join([location["@id"],ext])
+                poster=uri_pattern(location["@id"]+".png",config.HOST+"/posters")
+                thumb=uri_pattern(location["@id"]+"_thumb.png",config.HOST+"/posters")
             else:
                 loc=location["@id"]
             payload["@graph"]["url"].append(uri_pattern(loc,prefix))
+            payload["@graph"]["ma:image"].append({"poster":poster,"thumb":thumb})
         return mongo_jsonify(payload["@graph"])
 
     def set_attrs(self):
@@ -181,17 +185,17 @@ class MediaAsset(Resource):
                     for i in v:
                         self.bundle["@graph"][k].append({"@id":i["@id"],"name":unicode(i[k])})
                 elif k in ["ma:isCopyrightedBy","ma:hasGenre"]:
-                    self.bundle["@graph"][k]={"@id":v["@id"],"name":unicode([k]) }
-                    self.bundle["@graph"][k]=ObjectId(v)
+                    self.bundle["@graph"][k]={"@id":v["@id"],"name":unicode(v["name"]) if v["name"] is not None else v["name"] }
+                    #self.bundle["@graph"][k]=ObjectId(v)
                 elif self.model.structure['@graph'][k]==type(u""):
                     self.bundle["@graph"][k]=unicode(v)
                 elif k=="ma:title":
                     self.bundle["ititle"]=unicode(v).lower()
                     self.bundle["@graph"]["ma:title"]=unicode(v)
                 elif self.model.structure['@graph'][k]==type(2):
-                    self.bundle["@graph"][k]=int(v)
+                    self.bundle["@graph"][k]=int(v) if v is not None else 0
                 elif self.model.structure['@graph'][k]==type(2.0):
-                    self.bundle["@graph"][k]=float(v)
+                    self.bundle["@graph"][k]=float(v) if v is not None else 0
                 elif type(self.model.structure['@graph'][k])==type([]):
                     self.bundle["@graph"][k]=[]
                     for i in v:
@@ -202,6 +206,8 @@ class MediaAsset(Resource):
                             self.bundle["@graph"][k].append(membership)
                         else:
                             self.bundle["@graph"][k].append(i)    
+                elif k=="dc:date":
+                    self.bundle["@graph"][k]=datetime.strptime(v, '%Y-%m-%d')
                 else: 
                     self.bundle["@graph"][k]=v
             elif k=="url":
@@ -211,12 +217,15 @@ class MediaAsset(Resource):
                 for i in v:
                     p=urlparse(i)
                     if p[1]=="youtube.com":
-                        path=parse_qs(p[4])["v"]
+                        file=parse_qs(p[4])["v"]
+                        ext="mp4"
+                    elif p[1]=="youtu.be":
+                        file=p[2].split("/")[-1]
+                        ext="mp4"
                     else:
-                        path=p[2]
-                    path=path.split("/")[-1]
-                    file,ext=splitext(path)
-                    ext=ext.replace(".","")
+                        path=p[2].split("/")[-1]
+                        file,ext=splitext(path)
+                        ext=ext.replace(".","")
                     loc={"@id":file,"ma:hasFormat":"video/"+ext}
                     if ext=="mp4":
                         loc["ma:hasCompression"]={"@id":"http://www.freebase.com/view/en/h_264_mpeg_4_avc","name": "avc.42E01E"}
