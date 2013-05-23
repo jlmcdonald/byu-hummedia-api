@@ -133,7 +133,7 @@ def auth_redirect(provider="cas",authUser=None):
     return redirect(get_redirect_url())
 
 @app.route('/account/login',methods=['GET'])
-@app.route('/account/login/<providerService>',methods=['GET'])
+@app.route('/account/login/<providerService>',methods=['GET','OPTIONS'])
 @crossdomain(origin=['http://hlrdev.byu.edu','https://hlrdev.byu.edu','http://ian.byu.edu','https://ian.byu.edu'],headers=['Origin','x-requested-with','accept','Content-Type', 'Authorization'],credentials=True)
 def apiLogin(providerService="cas"):
     session["redirect"]=request.args.get("r",session.get("redirect"))
