@@ -41,10 +41,8 @@ def get_profile():
     
 def get_redirect_url():
     r = session.get("redirect") if session.get("redirect") else url_for("profile")
-    params={"username":get_user()} if get_user() else {}
     url_parts = list(urlparse.urlparse(r))
     query = urlparse.parse_qs(url_parts[4])
-    query.update(params)
     url_parts[4] = urllib.urlencode(query)
     return urlparse.urlunparse(url_parts)
   
