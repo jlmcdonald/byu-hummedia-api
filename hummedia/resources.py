@@ -96,7 +96,7 @@ class MediaAsset(Resource):
         v=self.request.args.get("q",False)
         if v:
             cire={'$regex':'.*'+v+'.*', '$options': 'i'}
-            q["$or"]=[{"ititle":cire},
+            q["$or"]=[{"@graph.ma:title":cire},
             {"@graph.ma:description":cire},
             {"@graph.ma:hasKeyword":cire}
             ]
@@ -112,7 +112,7 @@ class MediaAsset(Resource):
             for (k,v) in self.request.args.items():
                 cire={'$regex':'.*'+v+'.*', '$options': 'i'}
                 if k == "ma:title":
-                    q["ititle"]=cire
+                    q["@graph.ma:title"]=cire
                 elif k in ["ma:description","ma:hasKeyword"]:
                     q["@graph."+k]=cire
                 elif k not in ["yearfrom","yearto","ma:date","part","inhibitor"]:
@@ -190,7 +190,6 @@ class MediaAsset(Resource):
                 elif self.model.structure['@graph'][k]==type(u""):
                     self.bundle["@graph"][k]=unicode(v)
                 elif k=="ma:title":
-                    self.bundle["ititle"]=unicode(v).lower()
                     self.bundle["@graph"]["ma:title"]=unicode(v)
                 elif self.model.structure['@graph'][k]==type(2):
                     self.bundle["@graph"][k]=int(v) if v is not None else 0
