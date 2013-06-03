@@ -346,16 +346,21 @@ class Annotation(Resource):
         alist=[]
         self.bundle=self.auth_filter()
         for d in self.bundle:
-            d["@graph"]["resource"]=uri_pattern(d["@graph"]["pid"],config.APIHOST+"/"+self.endpoint)
-            alist.append(d["@graph"])
+            if self.request.args.get("client",None):
+                alist.append(self.client_process(d,True))
+            else:
+                d["@graph"]["resource"]=uri_pattern(d["@graph"]["pid"],config.APIHOST+"/"+self.endpoint)
+                alist.append(d["@graph"])
         return mongo_jsonify(alist)
         
     def set_resource(self):
         self.bundle["@graph"]["resource"]=uri_pattern(self.bundle["@graph"]["pid"],config.APIHOST+"/"+self.endpoint)
         
-    def client_process(self):
+    def client_process(self,bundle=None,list=False):
+        if not bundle:
+            bundle=self.bundle
         c=clients.lookup[self.request.args.get("client")]()
-        m=assets.find_one(self.bundle["@graph"]["dc:relation"])
+        m=assets.find_one(bundle["@graph"]["dc:relation"])
         m["@graph"]["resource"]=uri_pattern(m["@graph"]["pid"],config.APIHOST+"/video")
         m["@graph"]["type"]=resolve_type(m["@graph"]["dc:type"])
         m["@graph"]["url"]=[]
@@ -367,7 +372,8 @@ class Annotation(Resource):
                 host="http://youtu.be"
                 ext=""
             m["@graph"]["url"].append(uri_pattern(url["@id"]+ext,host))
-        return c.serialize(self.bundle["@graph"],m["@graph"])
+        resp_context=True if not list else False
+        return c.serialize(bundle["@graph"],m["@graph"],resp_context)
 
     def preprocess_bundle(self):
         self.bundle["@graph"]["dc:identifier"] = "%s/%s" % (self.namespace,str(self.bundle["_id"]))

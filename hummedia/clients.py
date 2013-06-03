@@ -42,7 +42,7 @@ class Popcorn_Client():
                 packet["vcp:commands"].append(b)
         return packet                
     
-    def serialize(self,obj,media):
+    def serialize(self,obj,media,resp=True):
         types={"oax:classification": "reference","oax:description":"modal","oax:comment":"comment"}
         popcorn={"targets":[],"media":[],"creator": obj["dc:creator"]}
         targets=["main","_caption","popup","sidebar"]
@@ -75,6 +75,9 @@ class Popcorn_Client():
                 if event["type"]=="reference":
                     event["popcornOptions"]["list"]=command["oax:hasSemanticTag"]          
             popcorn["media"][0]["tracks"][0]["trackEvents"].append(event)
-        return Response(json.dumps(popcorn, cls=helpers.mongokitJSON),status=200,mimetype="application/json")
+        if resp:
+            return Response(json.dumps(popcorn, cls=helpers.mongokitJSON),status=200,mimetype="application/json")
+        else:
+            return popcorn
         
 lookup={"popcorn": Popcorn_Client}
