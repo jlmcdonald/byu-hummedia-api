@@ -216,16 +216,14 @@ class Video(Document):
         resource=uri_pattern(vid["pid"],host+"/video")
         thepart={"ma:title":vid["ma:title"],"pid":vid["pid"],"resource":resource}
         if part!="snippet":
-            thepart["ma:date"]=vid["ma:date"]
-            thepart["ma:description"]=vid["ma:description"]
-            thepart["ma:hasLanguage"]=vid["ma:hasLanguage"]
             thepart["ma:image"]=[]
             for location in vid["ma:locator"]:
                 if resolve_type(vid["dc:type"])=="humvideo":
                     poster=uri_pattern(location["@id"]+".png",HOST+"/posters")
                     thumb=uri_pattern(location["@id"]+"_thumb.png",HOST+"/posters")
                 else:
-                    loc=location["@id"]
-                    poster,thumb=getYtThumbs(loc)
+                    poster,thumb=getYtThumbs(location["@id"])
                 thepart["ma:image"].append({"poster":poster,"thumb":thumb})
+            for att in ["ma:date","ma:description","ma:hasLanguage","ma:hasPolicy", "ma:isMemberOf"]:
+                thepart[att]=vid.get(att)
         return thepart
