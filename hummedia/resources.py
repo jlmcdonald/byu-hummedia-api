@@ -248,6 +248,9 @@ class AssetGroup(Resource):
     endpoint="collection"
     override_only_triggers=['enrollment']
     
+
+    # need to overload delete method so it does this: db.assets.update({"@graph.ma:isMemberOf":{"@id":ObjectId("515e7533a5182415efc991fd")}},{$pull: {"@graph.ma:isMemberOf":{"@id":ObjectId("515e7533a5182415efc991fd")}}})
+
     def set_query(self):
         q={"@graph.dc:creator":self.request.args.get("dc:creator")} if "dc:creator" in self.request.args else {}
         return q
@@ -335,13 +338,21 @@ class Annotation(Resource):
     
     def set_query(self):
         if self.request.args.get("dc:relation",False):
-            q={"@graph.dc:relation":ObjectId(self.request.args.get("dc:relation"))}
+            if self.request.args.get("collection"):
+                q={"_id":False}
+                v=assets.find_one({"_id":ObjectId(self.request.args.get("dc:relation"))})
+                if v:
+                    for coll in v["@graph"]["ma:isMemberOf"]:
+                        if coll["@id"]==ObjectId(self.request.args.get("collection")) and "restrictor" in coll:
+                            q={"_id":ObjectId(coll['restrictor'])}
+            else:
+                q={"@graph.dc:relation":ObjectId(self.request.args.get("dc:relation"))}
         elif self.request.args.get("dc:creator",False):
             q={"@graph.dc:creator":self.request.args.get("dc:creator")}
         else:
             q={}
         return q
-        
+
     def get_list(self):
         alist=[]
         self.bundle=self.auth_filter()
