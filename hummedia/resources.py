@@ -345,9 +345,13 @@ class Annotation(Resource):
                 q={"_id":False}
                 v=assets.find_one({"_id":ObjectId(self.request.args.get("dc:relation"))})
                 if v:
+                    annots=[]
                     for coll in v["@graph"]["ma:isMemberOf"]:
                         if coll["@id"]==ObjectId(self.request.args.get("collection")) and "restrictor" in coll:
-                            q={"_id":ObjectId(coll['restrictor'])}
+                            annots.append(ObjectId(str(coll['restrictor'])))
+                    for annot in v["@graph"]["ma:hasPolicy"]:
+                            annots.append(ObjectId(str(annot)))
+                    q={"_id":{'$in':annots}}
             else:
                 q={"@graph.dc:relation":ObjectId(self.request.args.get("dc:relation"))}
         elif self.request.args.get("dc:creator",False):
