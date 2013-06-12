@@ -122,6 +122,7 @@ class Resource():
     def delete(self,id):
         if self.acl_write_check():
             self.bundle=self.model.find_one({'_id': ObjectId(id)})
+            self.delete_associated(id)
             return self.delete_obj()
         else:
             return action_401()
@@ -222,6 +223,9 @@ class Resource():
             return jsonify({"success":"True"})
         except Exception as e:
             return bundle_400("The request was malformed: %s" % (e))
+
+    def delete_associated(self,id):
+        pass
 
     def dispatch(self,id):
         methods={"GET":self.get,"POST":self.post,"PUT":self.put,"PATCH":self.patch,"DELETE":self.delete}

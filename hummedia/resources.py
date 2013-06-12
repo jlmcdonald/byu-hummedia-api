@@ -248,9 +248,6 @@ class AssetGroup(Resource):
     endpoint="collection"
     override_only_triggers=['enrollment']
     
-
-    # need to overload delete method so it does this: db.assets.update({"@graph.ma:isMemberOf":{"@id":ObjectId("515e7533a5182415efc991fd")}},{$pull: {"@graph.ma:isMemberOf":{"@id":ObjectId("515e7533a5182415efc991fd")}}})
-
     def set_query(self):
         q={"@graph.dc:creator":self.request.args.get("dc:creator")} if "dc:creator" in self.request.args else {}
         return q
@@ -329,6 +326,9 @@ class AssetGroup(Resource):
         for (k,v) in self.request.json.items():
             if k in self.model.structure['@graph'] and k not in self.disallowed_atts:
                 self.bundle["@graph"][k]=unicode(v) if k in ["dc:title","dc:description"] else v
+
+    def delete_associated(self,id):
+        d=assets.update({"@graph.ma:isMemberOf":{"@id":ObjectId(id)}},{'$pull': {"@graph.ma:isMemberOf":{"@id":ObjectId(id)}}},multi=True)
 
 class Annotation(Resource):
     collection=annotations
