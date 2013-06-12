@@ -42,7 +42,7 @@ class Popcorn_Client():
                 packet["vcp:commands"].append(b)
         return packet                
     
-    def serialize(self,obj,media,resp=True):
+    def serialize(self,obj,media,resp=True,required=False):
         types={"oax:classification": "reference","oax:description":"modal","oax:comment":"comment"}
         popcorn={"targets":[],"media":[],"creator": obj["dc:creator"]}
         targets=["main","_caption","popup","sidebar"]
@@ -58,7 +58,7 @@ class Popcorn_Client():
         	"duration": media["ma:duration"],
         	"name": media["ma:title"],
         	"target": "player",
-        	"tracks": [{"name":obj["dc:title"],"id":obj["pid"],"settings":obj["vcp:playSettings"],"trackEvents":[]}]
+        	"tracks": [{"name":obj["dc:title"],"id":obj["pid"],"settings":obj["vcp:playSettings"],"required":required,"trackEvents":[]}]
         })
         for a in range(0,len(obj["vcp:commands"])):
             event={"id":"TrackEvent"+str(a)}

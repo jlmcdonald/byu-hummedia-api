@@ -384,7 +384,8 @@ class Annotation(Resource):
                 ext=""
             m["@graph"]["url"].append(uri_pattern(url["@id"]+ext,host))
         resp_context=True if not list else False
-        return c.serialize(bundle["@graph"],m["@graph"],resp_context)
+        required = True if bundle["@graph"]["pid"] in m["@graph"]["ma:hasPolicy"] else False
+        return c.serialize(bundle["@graph"],m["@graph"],resp_context,required)
 
     def preprocess_bundle(self):
         self.bundle["@graph"]["dc:identifier"] = "%s/%s" % (self.namespace,str(self.bundle["_id"]))
