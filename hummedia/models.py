@@ -226,6 +226,7 @@ class Video(Document):
                 thepart["ma:image"].append({"poster":poster,"thumb":thumb})
             for att in ["ma:date","ma:description","ma:hasLanguage","ma:hasPolicy", "ma:isMemberOf"]:
                 thepart[att]=vid.get(att)
-
-            # need title of collection with annotations
+            for annot in thepart["ma:isMemberOf"]:
+                coll=connection.hummedia.assetgroups.find_one({"_id":annot["@id"]})
+                annot["title"]=coll["@graph"]["dc:title"]
         return thepart

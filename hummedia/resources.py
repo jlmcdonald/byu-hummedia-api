@@ -148,12 +148,12 @@ class MediaAsset(Resource):
         return allowed
         
     def serialize_bundle(self,payload):
-        if self.request.args.get("annotations",False):
-            a=annotations.find({"@graph.dc:relation":payload["_id"]})
-            payload["@graph"]["annotations"]=[]
-            for ann in a:
-                new_ann=Annotation(bundle=ann["@graph"],client=self.request.args.get("client",None))
-                payload["@graph"]["annotations"].append(new_ann.part.data)
+        #if self.request.args.get("annotations",False):
+         #   a=annotations.find({"@graph.dc:relation":payload["_id"]})
+          #  payload["@graph"]["annotations"]=[]
+           # for ann in a:
+            #    new_ann=Annotation(bundle=ann["@graph"],client=self.request.args.get("client",None))
+             #   payload["@graph"]["annotations"].append(new_ann.part.data)
         payload["@graph"]["resource"]=uri_pattern(payload["@graph"]["pid"],config.APIHOST+"/"+self.endpoint)    
         payload["@graph"]["type"]=resolve_type(payload["@graph"]["dc:type"])
         payload["@graph"]["url"]=[]
@@ -175,6 +175,9 @@ class MediaAsset(Resource):
                 poster,thumb=getYtThumbs(loc)
             payload["@graph"]["url"].append(uri_pattern(loc,prefix))
             payload["@graph"]["ma:image"].append({"poster":poster,"thumb":thumb})
+        for annot in payload["@graph"]["ma:isMemberOf"]:
+            coll=ags.find_one({"_id":annot["@id"]})
+            annot["title"]=coll["@graph"]["dc:title"]
         return mongo_jsonify(payload["@graph"])
 
     def set_attrs(self):
@@ -328,7 +331,7 @@ class AssetGroup(Resource):
                 self.bundle["@graph"][k]=unicode(v) if k in ["dc:title","dc:description"] else v
 
     def delete_associated(self,id):
-        d=assets.update({"@graph.ma:isMemberOf":{"@id":ObjectId(id)}},{'$pull': {"@graph.ma:isMemberOf":{"@id":ObjectId(id)}}},multi=True)
+        d=assets.update({"@graph.ma:isMemberOf.@id":ObjectId(id)},{'$pull': {"@graph.ma:isMemberOf":{"@id":ObjectId(id)}}},multi=True)
 
 class Annotation(Resource):
     collection=annotations
