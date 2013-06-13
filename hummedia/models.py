@@ -1,4 +1,4 @@
-from mongokit import Document, Connection, CustomType, ObjectId, OR
+from mongokit import Document, Connection, CustomType, OR
 import datetime
 
 class IsoDate(CustomType):
@@ -48,7 +48,7 @@ class AnnotationList(Document):
             "pid": basestring,
             "dc:identifier":basestring,
             "dc:title": unicode,
-            "dc:relation": ObjectId,
+            "dc:relation": basestring,
             "dc:creator": basestring,
             "dc:date":IsoDate(),
             "vcp:playSettings": dict,
@@ -130,7 +130,6 @@ class Video(Document):
     use_schemaless=True
     structure= {
         "@context": dict,
-        "ititle":unicode,
         "@graph": {
             "dc:creator": basestring,
             "dc:date": IsoDate(),    

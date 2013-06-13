@@ -3,7 +3,8 @@ from os.path import splitext
 from models import connection
 from flask import Response, jsonify
 from helpers import Resource, mongo_jsonify, parse_npt, resolve_type, uri_pattern, bundle_400, action_401, is_enrolled, getYtThumbs
-from mongokit import ObjectId, cursor
+from mongokit import cursor
+from bson import ObjectId
 from urlparse import urlparse, parse_qs
 import clients, config
 
@@ -55,11 +56,11 @@ class UserProfile(Resource):
             self.bundle=self.model()
             if not pid:
                 if "username" in self.request.json:
-                    self.bundle["_id"]=ObjectId(self.request.json.username)
+                    self.bundle["_id"]=str(self.request.json.username)
                 else:
                     return bundle_400()
             else:
-                self.bundle["_id"]=ObjectId(pid)
+                self.bundle["_id"]=str(ObjectId(pid))
             self.preprocess_bundle()
             self.set_attrs()
             return self.save_bundle()
@@ -141,7 +142,7 @@ class MediaAsset(Resource):
         allowed=False
         for parent in obj['@graph']['ma:isMemberOf']:
             id=parent['@id'] if '@id' in parent else None
-            c=ags.find_one({"_id":ObjectId(id)})
+            c=ags.find_one({"_id":str(id)})
             if c:
                 if is_enrolled(username,c):
                     allowed=True
@@ -204,7 +205,7 @@ class MediaAsset(Resource):
                         if k=="ma:isMemberOf":
                             membership={}
                             for (g,h) in i.items():
-                                membership[g]=ObjectId(h) if g=="@id" else h
+                                membership[g]=str(h)
                             self.bundle["@graph"][k].append(membership)
                         else:
                             self.bundle["@graph"][k].append(i)    
@@ -239,7 +240,7 @@ class MediaAsset(Resource):
         from auth import get_profile
         atts=get_profile()
         if atts['superuser']:
-            self.bundle=self.model.find_one({'_id': ObjectId(id)})
+            self.bundle=self.model.find_one({'_id': str(id)})
             return self.delete_obj()
         else:
             return action_401()
@@ -331,7 +332,7 @@ class AssetGroup(Resource):
                 self.bundle["@graph"][k]=unicode(v) if k in ["dc:title","dc:description"] else v
 
     def delete_associated(self,id):
-        d=assets.update({"@graph.ma:isMemberOf.@id":ObjectId(id)},{'$pull': {"@graph.ma:isMemberOf":{"@id":ObjectId(id)}}},multi=True)
+        d=assets.update({"@graph.ma:isMemberOf.@id":str(id)},{'$pull': {"@graph.ma:isMemberOf":{"@id":str(id)}}},multi=True)
 
 class Annotation(Resource):
     collection=annotations
@@ -343,17 +344,17 @@ class Annotation(Resource):
         if self.request.args.get("dc:relation",False):
             if self.request.args.get("collection"):
                 q={"_id":False}
-                v=assets.find_one({"_id":ObjectId(self.request.args.get("dc:relation"))})
+                v=assets.find_one({"_id":str(self.request.args.get("dc:relation"))})
                 if v:
                     annots=[]
                     for coll in v["@graph"]["ma:isMemberOf"]:
-                        if coll["@id"]==ObjectId(self.request.args.get("collection")) and "restrictor" in coll:
-                            annots.append(ObjectId(str(coll['restrictor'])))
+                        if coll["@id"]==str(self.request.args.get("collection")) and "restrictor" in coll:
+                            annots.append(str(coll['restrictor']))
                     for annot in v["@graph"]["ma:hasPolicy"]:
-                            annots.append(ObjectId(str(annot)))
+                            annots.append((str(annot)))
                     q={"_id":{'$in':annots}}
             else:
-                q={"@graph.dc:relation":ObjectId(self.request.args.get("dc:relation"))}
+                q={"@graph.dc:relation":str(self.request.args.get("dc:relation"))}
         elif self.request.args.get("dc:creator",False):
             q={"@graph.dc:creator":self.request.args.get("dc:creator")}
         else:
@@ -418,9 +419,7 @@ class Annotation(Resource):
         else:
             packet=self.request.json
         for (k,v) in packet.items():
-            if k=="dc:relation":
-                self.bundle["@graph"][k]=ObjectId(v)
-            elif k=="dc:title":
+            if k=="dc:title":
                 self.bundle["@graph"]["dc:title"]=unicode(v)
             elif k=="vcp:playSettings":
                 for (i,j) in v.items():

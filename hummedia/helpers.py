@@ -2,7 +2,8 @@ from flask import request, Response, jsonify, current_app
 from flask_oauth import OAuth
 from datetime import datetime, timedelta, date
 from functools import update_wrapper
-from mongokit import ObjectId, cursor 
+from mongokit import cursor
+from bson import ObjectId
 from models import connection
 from config import APIHOST, YT_SERVICE
 from urllib2 import Request, urlopen, URLError
@@ -76,7 +77,7 @@ class Resource():
         pass
 
     def patch(self,id):
-        self.bundle=self.model.find_one({'_id': ObjectId(id)})
+        self.bundle=self.model.find_one({'_id': str(id)})
         if self.acl_write_check(self.bundle):
             self.set_attrs()
             return self.save_bundle()
@@ -86,7 +87,7 @@ class Resource():
     def post(self,id=None):
         if self.acl_write_check():
             self.bundle=self.model()
-            self.bundle["_id"]=ObjectId(id)
+            self.bundle["_id"]=str(ObjectId(id))
             self.preprocess_bundle()
             self.set_attrs()
             return self.save_bundle()
@@ -100,7 +101,7 @@ class Resource():
         q=self.set_query()
         if id:
             try:
-                q['_id']=ObjectId(id)
+                q['_id']=str(ObjectId(id))
             except Exception as e:
                 return bundle_400("The ID you submitted is malformed.")
             self.bundle=self.get_bundle(q)
@@ -121,7 +122,7 @@ class Resource():
 
     def delete(self,id):
         if self.acl_write_check():
-            self.bundle=self.model.find_one({'_id': ObjectId(id)})
+            self.bundle=self.model.find_one({'_id': str(id)})
             self.delete_associated(id)
             return self.delete_obj()
         else:
@@ -235,8 +236,6 @@ class mongokitJSON(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, (datetime, date)): 
             return int(time.mktime(obj.timetuple())) 
-        elif obj==ObjectId(str(obj)): 
-            return str(obj)
         else:
             return json.JSONEncoder.default(self, obj)
         
