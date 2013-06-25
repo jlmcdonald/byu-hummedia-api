@@ -350,7 +350,7 @@ class Annotation(Resource):
                     for coll in v["@graph"]["ma:isMemberOf"]:
                         if coll["@id"]==str(self.request.args.get("collection")) and "restrictor" in coll:
                             annots.append(str(coll['restrictor']))
-                    for annot in v["@graph"].get("ma:hasPolicy",None):
+                    for annot in v["@graph"].get("ma:hasPolicy"):
                             annots.append((str(annot)))
                     q={"_id":{'$in':annots}}
             else:
