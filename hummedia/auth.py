@@ -13,6 +13,10 @@ from os import environ
 from hummedia import app
 #app.session_interface = ItsdangerousSessionInterface()
 app.secret_key=config.SECRET_KEY
+app.session_cookie_name=config.COOKIE_NAME
+app.config['SESSION_COOKIE_DOMAIN']=config.COOKIE_DOMAIN
+app.config['APPLICATION_ROOT']=config.APPLICATION_ROOT
+app.config['SESSION_COOKIE_PATH']=app.config['APPLICATION_ROOT']
 provider_lookup={"google":GoogleOAuth2,"cas":CasAuth}
 oAuthService = provider_lookup["google"]("google") # done this way so eventually we can have multiple providers ... for now, it's hard coded
 cas = provider_lookup["cas"]()

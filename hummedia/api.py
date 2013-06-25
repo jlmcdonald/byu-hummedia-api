@@ -1,10 +1,17 @@
-from flask import request, jsonify
+from flask import request, jsonify, session
 from helpers import crossdomain, endpoint_404, mongo_jsonify
 from resources import *
 
 from hummedia import app
 
 resource_lookup={"annotation":Annotation,"collection":AssetGroup,"video":MediaAsset, "account":UserProfile}
+
+@app.route('/cookietest',methods=['GET'])
+@crossdomain(origin='*',headers=['origin','x-requested-with','accept','Content-Type'])
+def cookietest():
+	session['cookie_test']="we are here!"
+	cookie_packet={"session_cookie_path":app.config['SESSION_COOKIE_PATH'],"session_cookie_domain":app.config['SESSION_COOKIE_DOMAIN'],"session_cookie_name":app.config['SESSION_COOKIE_NAME'],"session_cookie_secure":app.config['SESSION_COOKIE_SECURE'],"cookie_test":session.get('cookie_test')}
+	return jsonify(cookie_packet)
 
 @app.route('/language',methods=['GET'])
 @crossdomain(origin='*',headers=['origin','x-requested-with','accept','Content-Type'])

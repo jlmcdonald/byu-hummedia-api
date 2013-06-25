@@ -237,7 +237,10 @@ class mongokitJSON(json.JSONEncoder):
         if isinstance(obj, (datetime, date)): 
             return int(time.mktime(obj.timetuple())) 
         else:
-            return json.JSONEncoder.default(self, obj)
+            try:
+                return json.JSONEncoder.default(self, obj)
+            except TypeError:
+                return str(obj)
         
 def get_auth():
     return [get_user(),get_role(),is_superuser()]
