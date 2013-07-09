@@ -43,15 +43,9 @@ class Popcorn_Client():
         return packet                
     
     def serialize(self,obj,media,resp=True,required=False):
-        types={"oax:classification": "reference","oax:description":"modal","oax:comment":"comment"}
+        types={"oax:classification": "reference","oax:description":"modal","oax:comment":"comment","oax:link":"link", "oax:question":"interaction"}
+        targets={"comment":"target-1","reference":"target-2","interaction":"target-3", "link":"target-3"}
         popcorn={"targets":[],"media":[],"creator": obj["dc:creator"]}
-        targets=["main","_caption","popup","sidebar"]
-        for i in range(0,len(targets)):
-           popcorn["targets"].append({
-    		"id": "Target"+str(i),
-    		"name": "Target"+str(i),
-    		"element": targets[i]
-    	   })
         popcorn["media"].append({
         	"id": media["pid"],
         	"url": media["url"],
@@ -60,20 +54,22 @@ class Popcorn_Client():
         	"target": "player",
         	"tracks": [{"name":obj["dc:title"],"id":obj["pid"],"settings":obj["vcp:playSettings"],"required":required,"trackEvents":[]}]
         })
-        for a in range(0,len(obj["vcp:commands"])):
-            event={"id":"TrackEvent"+str(a)}
-            for (ctype,command) in obj["vcp:commands"][a].items():
+        #for a in range(0,len(obj["vcp:commands"])):
+        for a in obj["vcp:commands"]:
+            event={}
+            #for (ctype,command) in obj["vcp:commands"][a].items():
+            for (ctype,command) in a.items():
                 event["type"]=types[ctype] if ctype in types else command["oax:hasSemanticTag"]
                 event["popcornOptions"]=helpers.parse_npt(command["oa:hasTarget"])
-                if "oa:hasBody" in command:
-                    event["popcornOptions"]["target"]=command["oa:hasBody"]["target"] if "target" in command["oa:hasBody"] else command["oax:hasSemanticTag"]
-                else:
-                    event["popcornOptions"]["target"]="main"
-                if event["type"]in ("reference","modal","comment"):
+                event["popcornOptions"]["target"]=targets[event['type']] if event['type'] in targets else "target-0"
+                if event["type"]in ("reference","modal","comment","interaction"):
                     event["popcornOptions"]["item"]=command["oa:hasBody"]["dc:title"]
                     event["popcornOptions"]["text"]=command["oa:hasBody"]["content"]
                 if event["type"]=="reference":
-                    event["popcornOptions"]["list"]=command["oax:hasSemanticTag"]          
+                    event["popcornOptions"]["list"]=command["oax:hasSemanticTag"]
+                if event["type"]=="link":
+                    event["popcornOptions"]["item"]=command["oa:hasBody"]["content"]
+                    event["popcornOptions"]["service"]=command["oax:hasSemanticTag"]         
             popcorn["media"][0]["tracks"][0]["trackEvents"].append(event)
         if resp:
             return Response(json.dumps(popcorn, cls=helpers.mongokitJSON),status=200,mimetype="application/json")

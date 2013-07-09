@@ -392,7 +392,10 @@ class Annotation(Resource):
                 ext=""
             m["@graph"]["url"].append(uri_pattern(url["@id"]+ext,host))
         resp_context=True if not list else False
-        required = True if bundle["@graph"]["pid"] in m["@graph"]["ma:hasPolicy"] else False
+        try:
+            required = True if bundle["@graph"]["pid"] in m["@graph"].get("ma:hasPolicy") else False
+        except TypeError:
+            return bundle_400("That annotation list isn't currently associated with any media.")
         return c.serialize(bundle["@graph"],m["@graph"],resp_context,required)
 
     def preprocess_bundle(self):
