@@ -322,6 +322,7 @@ def plain_resp(obj):
 def parse_npt(nptstr):
     times=nptstr.split(":")[1]
     (start,end)=times.split(",")
+    end=end if end.strip() else "0"
     return {"start":start,"end":end}
 
 def resolve_type(t):

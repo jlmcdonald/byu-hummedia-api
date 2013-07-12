@@ -149,12 +149,6 @@ class MediaAsset(Resource):
         return allowed
         
     def serialize_bundle(self,payload):
-        #if self.request.args.get("annotations",False):
-         #   a=annotations.find({"@graph.dc:relation":payload["_id"]})
-          #  payload["@graph"]["annotations"]=[]
-           # for ann in a:
-            #    new_ann=Annotation(bundle=ann["@graph"],client=self.request.args.get("client",None))
-             #   payload["@graph"]["annotations"].append(new_ann.part.data)
         payload["@graph"]["resource"]=uri_pattern(payload["@graph"]["pid"],config.APIHOST+"/"+self.endpoint)    
         payload["@graph"]["type"]=resolve_type(payload["@graph"]["dc:type"])
         payload["@graph"]["url"]=[]
@@ -179,6 +173,8 @@ class MediaAsset(Resource):
         for annot in payload["@graph"]["ma:isMemberOf"]:
             coll=ags.find_one({"_id":annot["@id"]})
             annot["title"]=coll["@graph"]["dc:title"]
+	for track in payload["@graph"]["ma:hasRelatedResource"]:
+	    track["@id"]=uri_pattern(track["@id"],config.HOST+"/text")
         return mongo_jsonify(payload["@graph"])
 
     def set_attrs(self):

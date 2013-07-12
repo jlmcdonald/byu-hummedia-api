@@ -171,6 +171,7 @@ class Video(Document):
             "ma:hasLanguage": [basestring],
             "ma:isMemberOf": [dict],
             "ma:isRelatedTo": [basestring],
+	    "ma:hasRelatedResource": [dict],
             "ma:hasKeyword": [basestring],
             "ma:hasPolicy": [basestring],
             "ma:locator": [

@@ -43,7 +43,7 @@ class Popcorn_Client():
         return packet                
     
     def serialize(self,obj,media,resp=True,required=False):
-        types={"oax:classification": "reference","oax:description":"modal","oax:comment":"comment","oax:link":"link", "oax:question":"interaction"}
+        types={"oax:classification": "reference","oax:description":"modal","oax:comment":"comment","oax:question":"interaction","oax:link":"link"}
         targets={"comment":"target-1","reference":"target-2","interaction":"target-3", "link":"target-3"}
         popcorn={"targets":[],"media":[],"creator": obj["dc:creator"]}
         popcorn["media"].append({
@@ -69,7 +69,10 @@ class Popcorn_Client():
                     event["popcornOptions"]["list"]=command["oax:hasSemanticTag"]
                 if event["type"]=="link":
                     event["popcornOptions"]["item"]=command["oa:hasBody"]["content"]
-                    event["popcornOptions"]["service"]=command["oax:hasSemanticTag"]         
+                    if command["oax:hasSemanticTag"] in ["freebase-search","google-search","youtube-search"]:
+			event["type"]=command["oax:hasSemanticTag"]
+		    else:
+		    	event["popcornOptions"]["service"]=command["oax:hasSemanticTag"]     
             popcorn["media"][0]["tracks"][0]["trackEvents"].append(event)
         if resp:
             return Response(json.dumps(popcorn, cls=helpers.mongokitJSON),status=200,mimetype="application/json")
