@@ -173,8 +173,9 @@ class MediaAsset(Resource):
         for annot in payload["@graph"]["ma:isMemberOf"]:
             coll=ags.find_one({"_id":annot["@id"]})
             annot["title"]=coll["@graph"]["dc:title"]
-	for track in payload["@graph"]["ma:hasRelatedResource"]:
-	    track["@id"]=uri_pattern(track["@id"],config.HOST+"/text")
+	if "ma:hasRelatedResource" in payload["@graph"]:
+	    for track in payload["@graph"]["ma:hasRelatedResource"]:
+	    	track["@id"]=uri_pattern(track["@id"],config.HOST+"/text")
         return mongo_jsonify(payload["@graph"])
 
     def set_attrs(self):
