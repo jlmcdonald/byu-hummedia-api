@@ -1,7 +1,7 @@
 from flask import request, jsonify, session
 from helpers import crossdomain, endpoint_404, mongo_jsonify
 from resources import *
-
+from config import CROSS_DOMAIN_HOSTS
 from hummedia import app
 
 resource_lookup={"annotation":Annotation,"collection":AssetGroup,"video":MediaAsset, "account":UserProfile}
@@ -21,7 +21,7 @@ def languages():
 
 @app.route('/<collection>', methods=['GET','POST','OPTIONS'])
 @app.route('/<collection>/<id>', methods=['GET','POST','PATCH','PUT','DELETE','OPTIONS'])
-@crossdomain(origin=['http://hlrdev.byu.edu','https://hlrdev.byu.edu','http://ian.byu.edu','https://ian.byu.edu'],headers=['Origin','x-requested-with','accept','Content-Type'],credentials=True)
+@crossdomain(origin=CROSS_DOMAIN_HOSTS,headers=['Origin','x-requested-with','accept','Content-Type'],credentials=True)
 def Collection(collection,id=None):
 	if collection in resource_lookup:
 		coll=resource_lookup[collection](request)
