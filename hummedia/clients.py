@@ -44,7 +44,7 @@ class Popcorn_Client():
     
     def serialize(self,obj,media,resp=True,required=False):
         types={"oax:classification": "reference","oax:description":"modal","oax:comment":"comment","oax:question":"interaction","oax:link":"link"}
-        targets={"comment":"target-1","reference":"target-2","interaction":"target-3", "link":"target-3"}
+        targets={"comment":"target-1","reference":"target-2","interaction":"target-3", "link":"target-4"}
         popcorn={"targets":[],"media":[],"creator": obj["dc:creator"]}
         popcorn["media"].append({
         	"id": media["pid"],
@@ -69,6 +69,7 @@ class Popcorn_Client():
                     event["popcornOptions"]["list"]=command["oax:hasSemanticTag"]
                 if event["type"]=="link":
                     event["popcornOptions"]["item"]=command["oa:hasBody"]["content"]
+                    event["popcornOptions"]["text"]=command["oa:hasBody"]["dc:title"]
                     if command["oax:hasSemanticTag"] in ["freebase-search","google-search","youtube-search"]:
 			event["type"]=command["oax:hasSemanticTag"]
 		    else:
