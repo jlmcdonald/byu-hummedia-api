@@ -1,9 +1,12 @@
 from flask import Response
-import json, helpers
+import json, helpers, copy
 
 class Popcorn_Client():
+    TYPES={"oax:classification": "reference","oax:description":"modal","oax:comment":"comment","oax:question":"interaction","oax:link":"link"}
+
     def deserialize(self,request):
-        types={"reference":"oax:classification","modal":"oax:description","comment":"oax:comment"}
+        # invert the type map
+        types=dict((v,k) for k, v in copy.deepcopy(self.TYPES).items())
         packet={}
         if "id" in request.json["media"][0]:
             packet["dc:relation"]=request.json["media"][0]["id"]
@@ -43,7 +46,7 @@ class Popcorn_Client():
         return packet                
     
     def serialize(self,obj,media,resp=True,required=False):
-        types={"oax:classification": "reference","oax:description":"modal","oax:comment":"comment","oax:question":"interaction","oax:link":"link"}
+        types=copy.deepcopy(self.TYPES)
         targets={"comment":"target-1","reference":"target-2","interaction":"target-3", "link":"target-3"}
         popcorn={"targets":[],"media":[],"creator": obj["dc:creator"]}
         popcorn["media"].append({
