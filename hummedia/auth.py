@@ -115,7 +115,7 @@ def get_user_from_cas(netid=None,atts=None):
     set_session_vars(user)
     return {"user":get_user()}
 
-@crossdomain(origin=['http://hlrdev.byu.edu','https://hlrdev.byu.edu','http://ian.byu.edu','https://ian.byu.edu'],headers=['Origin','x-requested-with','accept','Content-Type', 'Authorization'],credentials=True)
+@crossdomain(origin=config.CROSS_DOMAIN_HOSTS,headers=['Origin','x-requested-with','accept','Content-Type', 'Authorization'],credentials=True)
 def auth_redirect(provider="cas",authUser=None):
     if provider=="google":
         th=make_token_header()
@@ -136,7 +136,7 @@ def auth_redirect(provider="cas",authUser=None):
 
 @app.route('/account/login',methods=['GET'])
 @app.route('/account/login/<providerService>',methods=['GET','OPTIONS'])
-@crossdomain(origin=['http://hlrdev.byu.edu','https://hlrdev.byu.edu','http://ian.byu.edu','https://ian.byu.edu'],headers=['Origin','x-requested-with','accept','Content-Type', 'Authorization'],credentials=True)
+@crossdomain(origin=config.CROSS_DOMAIN_HOSTS,headers=['Origin','x-requested-with','accept','Content-Type', 'Authorization'],credentials=True)
 def apiLogin(providerService="cas"):
     session["redirect"]=request.args.get("r",session.get("redirect"))
     if get_user() and request.args.get("connect") is None:
@@ -152,7 +152,7 @@ def apiLogin(providerService="cas"):
         return redirect(cas.login_url(config.APIHOST+config.REDIRECT_URI))
         
 @app.route('/account/logout',methods=['GET','OPTIONS'])
-@crossdomain(origin=['http://hlrdev.byu.edu','https://hlrdev.byu.edu','http://ian.byu.edu','https://ian.byu.edu'],headers=['Origin','x-requested-with','accept','Content-Type'],credentials=True)
+@crossdomain(origin=config.CROSS_DOMAIN_HOSTS,headers=['Origin','x-requested-with','accept','Content-Type'],credentials=True)
 def apiLogout():
     if "username" in session:
         session.pop('username')
@@ -178,6 +178,6 @@ def authorized(resp):
     return auth_redirect(provider=provider)
 
 @app.route('/account/profile',methods=['GET','OPTIONS'])
-@crossdomain(origin=['http://hlrdev.byu.edu','https://hlrdev.byu.edu','http://ian.byu.edu','https://ian.byu.edu'],headers=['Origin','x-requested-with','accept','Content-Type'],credentials=True)
+@crossdomain(origin=config.CROSS_DOMAIN_HOSTS,headers=['Origin','x-requested-with','accept','Content-Type'],credentials=True)
 def profile():
     return jsonify(get_profile())

@@ -8,7 +8,7 @@ from bson import ObjectId
 from urlparse import urlparse, parse_qs
 import clients, config
 
-db=connection.hummedia
+db=connection[config.MONGODB_DB]
 ags=db.assetgroups
 assets=db.assets
 annotations=db.annotations
