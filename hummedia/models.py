@@ -1,4 +1,5 @@
 from mongokit import Document, Connection, CustomType, OR
+from config   import MONGODB_HOST, MONGODB_PORT, MONGODB_DB
 import datetime
 
 class IsoDate(CustomType):
@@ -13,12 +14,12 @@ class IsoDate(CustomType):
         if value is not None:
 		return datetime.datetime.strptime(value, '%Y-%m-%d')
 
-connection=Connection()
+connection=Connection(MONGODB_HOST, MONGODB_PORT)
 
 @connection.register
 class User(Document):
     __collection__="users"
-    __database__="hummedia"
+    __database__=MONGODB_DB
     use_schemaless=True
     structure={
         "username": basestring,
@@ -40,7 +41,7 @@ class User(Document):
 @connection.register
 class AnnotationList(Document):
     __collection__="annotations"
-    __database__="hummedia"
+    __database__=MONGODB_DB
     use_schemaless=True
     structure= {
         "@context": dict,
@@ -85,7 +86,7 @@ class AnnotationList(Document):
 @connection.register
 class AssetGroup(Document):
     __collection__="assetgroups"
-    __database__="hummedia"
+    __database__=MONGODB_DB
     use_schemaless=True
     structure= {
         "@context": dict,
@@ -126,7 +127,7 @@ class AssetGroup(Document):
 @connection.register
 class Video(Document):
     __collection__="assets"
-    __database__="hummedia"
+    __database__=MONGODB_DB
     use_schemaless=True
     structure= {
         "@context": dict,
@@ -227,6 +228,6 @@ class Video(Document):
             for att in ["ma:date","ma:description","ma:hasLanguage","ma:hasPolicy", "ma:isMemberOf"]:
                 thepart[att]=vid.get(att)
             for annot in thepart["ma:isMemberOf"]:
-                coll=connection.hummedia.assetgroups.find_one({"_id":annot["@id"]})
+                coll=connection[MONGODB_DB].assetgroups.find_one({"_id":annot["@id"]})
                 annot["title"]=coll["@graph"]["dc:title"]
         return thepart

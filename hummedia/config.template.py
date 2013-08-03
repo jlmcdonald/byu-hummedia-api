@@ -5,6 +5,8 @@ HOST="https://zelda.byu.edu"
 APIHOST=HOST+"/api/devel"
 REDIRECT_URI="/account/callback"
 
+CROSS_DOMAIN_HOSTS=['http://hlrdev.byu.edu','https://hlrdev.byu.edu','http://ian.byu.edu','https://ian.byu.edu']
+
 UNSUPPORTED_FORMAT=Response("That format is not currently supported.",status=400,mimetype="text/plain")
 NOT_FOUND=Response("That object could not be found.",status=404,mimetype="text/plain")
 BAD_REQUEST=Response("The request was malformed in some way.",status=400,mimetype="text/plain")
