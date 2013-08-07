@@ -3,51 +3,49 @@ import json, helpers, copy
 
 class Popcorn_Client():
     TYPES={"oax:classification": "reference","oax:description":"modal","oax:comment":"comment","oax:question":"interaction","oax:link":"link"}
-
+    TARGETS={"popup":"target-0","comment":"target-1","reference":"target-2","interaction":"target-3", "link":"target-4"}
     def deserialize(self,request):
         # invert the type map
         types=dict((v,k) for k, v in copy.deepcopy(self.TYPES).items())
+        targets=dict((v,k) for k, v in copy.deepcopy(self.TARGETS).items())
         packet={}
-        if "id" in request.json["media"][0]:
-            packet["dc:relation"]=request.json["media"][0]["id"]
-        if "creator" in request.json:
-            packet["dc:creator"]=request.json["creator"]
+        packet["dc:relation"]=request.json["media"][0].get("id")
+        packet["dc:creator"]=request.json.get("creator")
         for track in request.json["media"][0]["tracks"]:
-            if "name" in track:
-                packet["dc:title"]=track["name"]
-            if "settings" in track:
-                packet["vcp:playSettings"]=track["settings"]
+            packet["dc:title"]=track.get("name")
+            packet["vcp:playSettings"]=track.get("settings")
             packet["vcp:commands"]=[]
             for event in track["trackEvents"]:
-                etype=types[event["type"]] if event["type"] in types else "oa:annotation"
-                npt="npt:%s,%s" % (event["popcornOptions"]["start"],event["popcornOptions"]["end"])
-                if "target" in event["popcornOptions"]:
-                    if event["type"]=="reference":
-                        semantic=event["popcornOptions"]["list"]
-                    elif event["popcornOptions"]["target"]=="main":
-                        semantic=event["type"]
-                    else:
-                        semantic=event["popcornOptions"]["target"]
-                    target=event["popcornOptions"]["target"]
+                if event["type"] in types:
+                    etype=types[event["type"]]
+                elif event["popcornOptions"].get("target")=="target-4":
+                    etype="oax:link"
                 else:
-                    semantic=event["type"]
-                    target=None
+                    etype="oa:annotation"
+                if event["popcornOptions"]["target"] not in ["target-0","target-4"]:
+                    if etype=="oax:comment":
+                        semantic="note"
+                    elif etype=="oax:classification":
+                        semantic=event["popcornOptions"]["list"]
+                    elif etype=="oax:question":
+                        semantic="question"
+                    else:
+                        semantic=targets[event["popcornOptions"]["target"]]
+                else:
+                    semantic=event["type"] if etype!="oax:description" else "popup"
+                end=event["popcornOptions"]["end"] if event["popcornOptions"]["end"] != "0" else ""
+                npt="npt:%s,%s" % (event["popcornOptions"]["start"],end)
                 b={etype:{"oax:hasSemanticTag":semantic,"oa:hasTarget":npt}}
                 if "text" in event["popcornOptions"] or "item" in event["popcornOptions"]:
-                    hasBody={}
-                    if "text" in event["popcornOptions"]:
-                        hasBody["content"]=event["popcornOptions"]["text"]
-                    if "item" in event["popcornOptions"]:
-                        hasBody["dc:title"]=event["popcornOptions"]["item"]
-                    if target:
-                        hasBody["@target"]=target
+                    hasBody={"content":event["popcornOptions"].get("text"),"dc:title":event["popcornOptions"].get("item")}
+                    if etype=="oax:link":
+                        hasBody["content"],hasBody["dc:title"]=hasBody["dc:title"],hasBody["content"]
                     b[etype]["oa:hasBody"]=hasBody
                 packet["vcp:commands"].append(b)
         return packet                
     
     def serialize(self,obj,media,resp=True,required=False):
         types=copy.deepcopy(self.TYPES)
-        targets={"comment":"target-1","reference":"target-2","interaction":"target-3", "link":"target-4"}
         popcorn={"targets":[],"media":[],"creator": obj["dc:creator"]}
         popcorn["media"].append({
         	"id": media["pid"],
@@ -62,9 +60,9 @@ class Popcorn_Client():
             for (ctype,command) in a.items():
                 event["type"]=types[ctype] if ctype in types else command["oax:hasSemanticTag"]
                 event["popcornOptions"]=helpers.parse_npt(command["oa:hasTarget"])
-                event["popcornOptions"]["target"]=targets[event['type']] if event['type'] in targets else "target-0"
+                event["popcornOptions"]["target"]=self.TARGETS[event['type']] if event['type'] in self.TARGETS else "target-0"
                 if event["type"]in ("reference","modal","comment","interaction"):
-                    event["popcornOptions"]["item"]=command["oa:hasBody"]["dc:title"]
+                    event["popcornOptions"]["item"]=command["oa:hasBody"].get("dc:title")
                     event["popcornOptions"]["text"]=command["oa:hasBody"]["content"]
                 if event["type"]=="reference":
                     event["popcornOptions"]["list"]=command["oax:hasSemanticTag"]
