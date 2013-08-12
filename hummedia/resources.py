@@ -421,7 +421,7 @@ class Annotation(Resource):
         for (k,v) in packet.items():
             if k=="dc:title":
                 self.bundle["@graph"]["dc:title"]=unicode(v)
-            elif k=="vcp:playSettings":
+            elif k=="vcp:playSettings" and len(v):
                 for (i,j) in v.items():
                     if i=="vcp:frameRate":
                         self.bundle["@graph"]["vcp:playSettings"][i]=float(j)
