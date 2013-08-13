@@ -62,7 +62,7 @@ class AnnotationList(Document):
         }
     }
     required_fields=["@context","@graph.dc:creator",
-                     "@graph.dc:date","@graph.dc:title","@graph.vcp:playSettings"]
+                     "@graph.dc:date","@graph.dc:title"]
     default_values={
         "@context": {
             "dc":"http://purl.org/dc/",
