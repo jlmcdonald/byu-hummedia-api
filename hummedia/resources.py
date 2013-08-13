@@ -435,10 +435,15 @@ class Annotation(Resource):
                     self.bundle["@graph"]["vcp:commands"].append(i)
             else:
                 self.bundle["@graph"][k]=v
-        if "video" in self.request.args:
+        if self.request.method == "POST":
+            m=connection.Video.find_one(self.bundle["@graph"]["dc:relation"])
             if "collection" in self.request.args:
-                pass # add as "restrictor" parameter on the relevant "isMemberOf" entry
+                for c in m["@graph"]["ma:isMemberOf"]:
+                    if c["@id"]==self.request.args["collection"]:
+                        c["restrictor"]=self.bundle["_id"]
+                        m.save()
+                        break
             else:
-                pass # add as "ma:policy" entry
-            #for both of these options, need to be able to get the asset object, get the current id, and save modification
-
+                if self.bundle["_id"] not in m["@graph"]["ma:hasPolicy"]:
+                    m["@graph"]["ma:hasPolicy"].append(self.bundle["_id"]) 
+                    m.save()
