@@ -1,5 +1,6 @@
 from flask import Response
 import json, helpers, copy
+from auth import get_user
 
 class Popcorn_Client():
     TYPES={"oax:classification": "reference","oax:description":"modal","oax:comment":"comment","oax:question":"interaction","oax:link":"link"}
@@ -10,7 +11,8 @@ class Popcorn_Client():
         targets=dict((v,k) for k, v in copy.deepcopy(self.TARGETS).items())
         packet={}
         packet["dc:relation"]=request.json["media"][0].get("id")
-        packet["dc:creator"]=request.json.get("creator")
+        packet["dc:creator"]=request.json.get("creator") if "creator" in request.json else get_user()
+
         for track in request.json["media"][0]["tracks"]:
             packet["dc:title"]=track.get("name")
             packet["vcp:playSettings"]=track.get("settings")
