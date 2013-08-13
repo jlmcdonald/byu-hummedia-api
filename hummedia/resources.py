@@ -421,7 +421,7 @@ class Annotation(Resource):
         for (k,v) in packet.items():
             if k=="dc:title":
                 self.bundle["@graph"]["dc:title"]=unicode(v)
-            elif k=="vcp:playSettings" and len(v):
+            elif k=="vcp:playSettings" and v:
                 for (i,j) in v.items():
                     if i=="vcp:frameRate":
                         self.bundle["@graph"]["vcp:playSettings"][i]=float(j)
@@ -435,4 +435,10 @@ class Annotation(Resource):
                     self.bundle["@graph"]["vcp:commands"].append(i)
             else:
                 self.bundle["@graph"][k]=v
+        if "video" in self.request.args:
+            if "collection" in self.request.args:
+                pass # add as "restrictor" parameter on the relevant "isMemberOf" entry
+            else:
+                pass # add as "ma:policy" entry
+            #for both of these options, need to be able to get the asset object, get the current id, and save modification
 
