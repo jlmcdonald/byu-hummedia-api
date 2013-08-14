@@ -13,10 +13,11 @@ class Popcorn_Client():
         packet["dc:relation"]=request.json["media"][0].get("id")
         packet["dc:creator"]=request.json.get("creator") if "creator" in request.json else get_user()
 
-        for track in request.json["media"][0]["tracks"]:
-            packet["dc:title"]=track.get("name")
-            packet["vcp:playSettings"]=track.get("settings")
-            packet["vcp:commands"]=[]
+        for idx,track in enumerate(request.json["media"][0]["tracks"]):
+            if idx==0:
+                packet["dc:title"]=track.get("name")
+                packet["vcp:playSettings"]=track.get("settings")
+                packet["vcp:commands"]=[]
             for event in track["trackEvents"]:
                 if event["type"] in types:
                     etype=types[event["type"]]
