@@ -144,11 +144,11 @@ class Resource():
     def acl_write_check(self,bundle=None):
         from auth import get_profile
         atts=get_profile()
-        if atts['superuser'] or (atts['role']=='faculty' and not bundle)
-		return True
-	if atts['role']=="faculty" and bundle:
-		if bundle["@graph"].get("dc:creator")==atts['username'] or atts['username'] in bundle['@graph']["dc:rights"]["write"]:
-			return True
+        if atts['superuser'] or (atts['role']=='faculty' and not bundle):
+            return True
+        if atts['role']=="faculty" and bundle:
+            if bundle["@graph"].get("dc:creator")==atts['username'] or atts['username'] in bundle['@graph']["dc:rights"]["write"]:
+                return True
 	return False
    
     def auth_filter(self,bundle=None):
