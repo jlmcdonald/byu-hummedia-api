@@ -265,7 +265,10 @@ class AssetGroup(Resource):
         self.bundle["@graph"]["resource"]=uri_pattern(self.bundle["@graph"]["pid"],config.APIHOST+"/"+self.endpoint)
         
     def read_override(self,obj,username,role):
-        return role=="student" and is_enrolled(obj) if resolve_type(obj["@graph"]["dc:type"]) in ["course_collection","themed_collection"] else False
+        if resolve_type(obj["@graph"]["dc:type"]) in ["course_collection","themed_collection"]:
+            return role=="student" and is_enrolled(obj)
+        else:
+            return False
             
     def preprocess_bundle(self):
         self.bundle["@graph"]["dc:identifier"] = "%s/%s" % (self.namespace,str(self.bundle["_id"]))
