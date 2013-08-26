@@ -1,12 +1,10 @@
+import urllib, urlparse, json
+import config
 from flask import request, session, redirect, url_for, jsonify
 from models import connection
 from urllib2 import Request, urlopen, URLError
-from hashlib import sha512
-from base64 import b64encode
-import urllib, urlparse, hmac
 from providers import *
-import json, config
-from helpers import crossdomain, plain_resp
+from helpers import crossdomain, plain_resp, get_enrollments
 from interfaces import ItsdangerousSessionInterface
 from os import environ
 
@@ -28,6 +26,9 @@ def get_access_token():
     
 def get_user():
     return session.get('username')
+
+def get_userid():
+    return str(session.get('userid'))
     
 def get_role():
     return session.get('role')
@@ -37,7 +38,7 @@ def superuser():
     
 def get_profile():
     atts={}
-    for att in ['username','role','superuser','fullname','preferredLanguage']:
+    for att in ['username','userid','role','superuser','fullname','preferredLanguage']:
         atts[att]=session.get(att)
     if (atts['username'] is None or atts['username']=="") and session.get('oauth'):
 	atts['oauth']=session.get('oauth')['provider']
@@ -51,7 +52,7 @@ def get_redirect_url():
     return urlparse.urlunparse(url_parts)
   
 def set_session_vars(user):
-    for att in ('username','role','superuser','fullname','preferredLanguage'):
+    for att in ('username','userid','role','superuser','fullname','preferredLanguage'):
         if att in user:
             session[att]=user[att]
 
@@ -62,16 +63,6 @@ def make_token_header():
     else:
         return 'OAuth '+access_token[0]
 
-def get_byu_hmac_nonce():
-    nonce_service="https://ws.byu.edu/authentication/services/rest/v1/hmac/nonce/%s" % config.BYU_API_KEY
-    req=Request(nonce_service,"return=1")
-    res=urlopen(req)
-    j=json.loads(res.read())
-    res.close()
-    binary_hash=hmacnew(config.BYU_SHARED_SECRET,j['nonceValue'],sha512).digest()
-    h=b64encode(binary_hash)
-    return (binary_hash,h)
-    
 def verify_oauth_access(th):
     headers = {'Authorization': th}
     req = Request(oAuthService.token_verify_url,None, headers)
@@ -104,6 +95,7 @@ def get_user_from_cas(netid=None,atts=None):
         user["lastname"]=unicode(atts["preferredSurname"])
         user["email"]=atts["emailAddress"]
         user["fullname"]="%s %s" % (user["firstname"],user["lastname"])
+        user["userid"]=int(atts["personId"])
         for ap in faculty_positions:
             if atts[ap]=="true":
                 user["role"]="faculty"
@@ -133,6 +125,10 @@ def auth_redirect(provider="cas",authUser=None):
         user=connection.User.find_one({"username":authUser})
         set_session_vars(user)
     return redirect(get_redirect_url())
+
+@app.route('/account/enrollments',methods=['GET'])
+def enrollementTest():
+    return plain_resp(get_enrollments())
 
 @app.route('/account/login',methods=['GET'])
 @app.route('/account/login/<providerService>',methods=['GET','OPTIONS'])

@@ -144,7 +144,7 @@ class MediaAsset(Resource):
             id=parent['@id'] if '@id' in parent else None
             c=ags.find_one({"_id":str(id)})
             if c:
-                if is_enrolled(username,c):
+                if is_enrolled(c):
                     allowed=True
         return allowed
         
@@ -190,8 +190,6 @@ class MediaAsset(Resource):
                     self.bundle["@graph"][k]={"@id":v["@id"],"name":unicode(v["name"]) if v["name"] is not None else v["name"] }
                 elif self.model.structure['@graph'][k]==type(u""):
                     self.bundle["@graph"][k]=unicode(v)
-                elif k=="ma:title":
-                    self.bundle["@graph"]["ma:title"]=unicode(v)
                 elif self.model.structure['@graph'][k]==type(2):
                     self.bundle["@graph"][k]=int(v) if v is not None else 0
                 elif self.model.structure['@graph'][k]==type(2.0):
@@ -267,10 +265,7 @@ class AssetGroup(Resource):
         self.bundle["@graph"]["resource"]=uri_pattern(self.bundle["@graph"]["pid"],config.APIHOST+"/"+self.endpoint)
         
     def read_override(self,obj,username,role):
-        if role=="student" and is_enrolled(username,obj):
-            return True
-        else:
-            return False
+        return role=="student" and is_enrolled(obj) if resolve_type(obj["@graph"]["dc:type"]) in ["course_collection","themed_collection"] else False
             
     def preprocess_bundle(self):
         self.bundle["@graph"]["dc:identifier"] = "%s/%s" % (self.namespace,str(self.bundle["_id"]))
@@ -284,9 +279,7 @@ class AssetGroup(Resource):
         if payload:
             v=assets.find({"@graph.ma:isMemberOf.@id":payload["_id"]})
             payload["@graph"]["videos"]=[]
-            from auth import get_profile
-            atts=get_profile()
-            if not is_enrolled(atts['username'],payload):
+            if not is_enrolled(payload):
                 v=self.auth_filter(v)
             for vid in v:
                 if self.request.args.get("full",False):
@@ -326,7 +319,14 @@ class AssetGroup(Resource):
             self.bundle["@graph"]["dc:type"]="hummedia:type/"+self.request.json["type"]
         for (k,v) in self.request.json.items():
             if k in self.model.structure['@graph'] and k not in self.disallowed_atts:
-                self.bundle["@graph"][k]=unicode(v) if k in ["dc:title","dc:description"] else v
+                if self.model.structure['@graph'][k]==type(u""):
+                    self.bundle["@graph"][k]=unicode(v)
+                elif type(self.model.structure['@graph'][k])==type([]):
+                    self.bundle["@graph"][k]=[]
+                    for i in v:
+                        self.bundle["@graph"][k].append(i)  
+                else:
+                    self.bundle["@graph"][k]=v
 
     def delete_associated(self,id):
         d=assets.update({"@graph.ma:isMemberOf.@id":str(id)},{'$pull': {"@graph.ma:isMemberOf":{"@id":str(id)}}},multi=True)

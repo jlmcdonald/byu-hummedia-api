@@ -19,41 +19,6 @@ class GoogleOAuth2(OAuthProvider):
 
 class CasAuth():
 	CAS_NS="{http://www.yale.edu/tp/cas}"
-	testresp='''<cas:serviceResponse xmlns:cas='http://www.yale.edu/tp/cas'>
-		<cas:authenticationSuccess>
-        <cas:user>jlm59</cas:user>
-        <cas:attributes>
-                <cas:restOfName>Jarom L</cas:restOfName>
-                <cas:activeParttimeNonBYUEmployee>false</cas:activeParttimeNonBYUEmployee>
-                <cas:activeParttimeInstructor>false</cas:activeParttimeInstructor>
-            	<cas:inactiveFulltimeEmployee>false</cas:inactiveFulltimeEmployee>
-                <cas:surname>McDonald</cas:surname>
-                <cas:activeFulltimeInstructor>true</cas:activeFulltimeInstructor>
-                <cas:memberOf>aagt,afins,alumni,agt,ains,netfse,cr03,EMPLOYEE DEPENDENT,ENTERPRISE DIRECTORY,FORMER STD--24 COMPLETED HRS,FULL TIME FACULTY,GRADUATED ALUMNI,LOAccess,OFFICE_OF_DIGITAL_HUMANITIES,QUALIFIED-FOR-LABS,QUALIFIED-FOR-ED2,SWEMP,STUDENT DEPENDENT,vnet</cas:memberOf>
-                <cas:preferredFirstName>Jarom</cas:preferredFirstName>
-                <cas:sortName>McDonald, Jarom L</cas:sortName>
-                <cas:activeFulltimeNonBYUEmployee>false</cas:activeFulltimeNonBYUEmployee>
-                <cas:inactiveParttimeNonBYUEmployee>false</cas:inactiveParttimeNonBYUEmployee>
-                <cas:organization>false</cas:organization>
-                <cas:activeEligibletoRegisterStudent>false</cas:activeEligibletoRegisterStudent>
-                <cas:name>Jarom McDonald</cas:name>
-                <cas:preferredSurname>McDonald</cas:preferredSurname>
-                <cas:personId>353204382</cas:personId>
-                <cas:inactiveParttimeInstructor>false</cas:inactiveParttimeInstructor>
-                <cas:netId>jlm59</cas:netId>
-                <cas:inactiveFulltimeNonBYUEmployee>false</cas:inactiveFulltimeNonBYUEmployee>
-                <cas:byuId>035404758</cas:byuId>
-                <cas:restricted>false</cas:restricted>
-                <cas:emailAddress>jarom_mcdonald@byu.edu</cas:emailAddress>
-                <cas:alumni>true</cas:alumni>
-                <cas:inactiveParttimeEmployee>false</cas:inactiveParttimeEmployee>
-                <cas:inactiveFulltimeInstructor>false</cas:inactiveFulltimeInstructor>
-                <cas:activeFulltimeEmployee>false</cas:activeFulltimeEmployee>
-                <cas:fullName>Jarom L McDonald</cas:fullName>
-                <cas:activeParttimeEmployee>false</cas:activeParttimeEmployee>
-        </cas:attributes>   
-    	</cas:authenticationSuccess>
-		</cas:serviceResponse>'''
 
 	def verify_ticket(self,ticket, service):
 		params={"ticket":ticket,"service":service}

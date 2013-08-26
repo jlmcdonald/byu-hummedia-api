@@ -23,10 +23,12 @@ class User(Document):
     use_schemaless=True
     structure={
         "username": basestring,
+        "userid": int,
         "email": basestring,
         "firstname": unicode,
         "lastname": unicode,
         "role": basestring,
+        "userid": int,
         "superuser": bool,
         "preferredLanguage": basestring,
         "oauth": {
@@ -92,11 +94,12 @@ class AssetGroup(Document):
         "@context": dict,
         "@graph": {
             "pid": basestring,
+            "authorized": bool,
             "dc:identifier":basestring,
             "dc:type": basestring,
             "dc:title": unicode,
             "dc:description": unicode,
-            "dc:relation": basestring,
+            "dc:relation": [basestring],
             "dc:creator": basestring,
             "dc:date":IsoDate(),
             "dc:coverage": basestring,
@@ -110,12 +113,14 @@ class AssetGroup(Document):
                      "@graph.dc:date","@graph.dc:title"]
     default_values={
         "@context": {
+                "authorized": False,
                 "dc": "http://purl.org/dc/elements/1.1/",
                 "hummedia": "http://humanities.byu.edu/hummedia/",
                 "dc:identifier": "@id",
                 "dc:type": "@type"
         },
         "@graph.dc:creator":"Hummedia",
+        "@graph.dc:relation":[],
         "@graph.dc:title":u"New Hummedia Collection",
         "@graph.dc:type":"hummedia:type/course_collection",
         "@graph.dc:date":datetime.datetime.utcnow(), 

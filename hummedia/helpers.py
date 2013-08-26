@@ -5,9 +5,10 @@ from functools import update_wrapper
 from mongokit import cursor
 from bson import ObjectId
 from models import connection
-from config import APIHOST, YT_SERVICE
+from config import APIHOST, YT_SERVICE, BYU_WS_ID, BYU_SHARED_SECRET
 from urllib2 import Request, urlopen, URLError
-import json
+import json, byu_ws_sdk, requests
+
 
 class NoModelException(Exception):
     pass
@@ -172,7 +173,6 @@ class Resource():
                     bundle.remove(obj)
         elif not self.acl_read_check(bundle,username,allowed,role):
             bundle={}
-        # need student filtering by course -- they can see course collections, and their videos, if enrolled. also need to allow faculty to see private videos
         return bundle
     
     def retain(self,obj,username):
@@ -246,16 +246,25 @@ class mongokitJSON(json.JSONEncoder):
                 return json.JSONEncoder.default(self, obj)
             except TypeError:
                 return str(obj)
-        
-def get_auth():
-    return [get_user(),get_role(),is_superuser()]
 
-def is_enrolled(username,obj):
-    if obj["@graph"].get("dc:relation")=="DHT 390R 20135":
-        return True
-    else:
+def get_enrollments():
+    from auth import get_user, get_userid
+    #url="https://ws.byu.edu/rest/v1.0/academic/registration/studentschedule/"+get_userid()+"/"+getCurrentSem()
+    url="https://ws.byu.edu/rest/v1.0/academic/registration/studentschedule/"+get_userid()+"/19985"
+    headerVal = byu_ws_sdk.get_http_authorization_header(BYU_WS_ID, BYU_SHARED_SECRET, byu_ws_sdk.KEY_TYPE_API,byu_ws_sdk.ENCODING_NONCE,actor=get_user(),url=url,httpMethod=byu_ws_sdk.HTTP_METHOD_GET,actorInHash=True)
+    res=requests.get(url, headers={'Authorization': headerVal})
+    courses=[]
+    content=json.loads(res.content)['WeeklySchedService']['response']
+    for course in content["schedule_table"]:
+        courses.append(" ".join((course['course'],course['section'],content['year_term'])))
+    return courses
+
+def is_enrolled(obj):
+    try:
+        return not set(get_enrollments()).isdisjoint(obj["@graph"]["dc:relation"])
+    except KeyError:
         return False
-            
+
 def crossdomain(origin=None, methods=None, headers=None, credentials=False,
                 max_age=21600, attach_to_all=True,
                 automatic_options=True,nocache=True):
@@ -348,3 +357,14 @@ def getYtThumbs(loc=None):
         poster=None
         thumb=None
     return poster,thumb
+
+def getCurrentSem():
+    today=datetime.now()
+    sem="1"
+    if today.month in [5,6]:
+        sem="3"
+    elif today.month in [7,8]:
+        sem="4"
+    elif today.month in [9,10,11,12]:
+        sem="5"
+    return str(today.year)+sem
