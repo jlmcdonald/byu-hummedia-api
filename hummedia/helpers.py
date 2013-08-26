@@ -263,7 +263,7 @@ def get_enrollments():
 def is_enrolled(obj):
     try:
         return not set(get_enrollments()).isdisjoint(obj["@graph"]["dc:relation"])
-    except KeyError:
+    except (TypeError,KeyError):
         return False
 
 def crossdomain(origin=None, methods=None, headers=None, credentials=False,
