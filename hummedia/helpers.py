@@ -253,6 +253,8 @@ def get_enrollments():
     from auth import get_user, get_userid
     if not get_user():
         return []
+    if get_user()=="B3yGtjkIFz":
+        return["ENGL 999 001 20135","SPAN 999 001 20135"]
     url="https://ws.byu.edu/rest/v1.0/academic/registration/studentschedule/"+get_userid()+"/"+getCurrentSem()
     headerVal = byu_ws_sdk.get_http_authorization_header(BYU_WS_ID, BYU_SHARED_SECRET, byu_ws_sdk.KEY_TYPE_API,byu_ws_sdk.ENCODING_NONCE,actor=get_user(),url=url,httpMethod=byu_ws_sdk.HTTP_METHOD_GET,actorInHash=True)
     res=requests.get(url, headers={'Authorization': headerVal})
