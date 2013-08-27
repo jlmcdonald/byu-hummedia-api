@@ -123,8 +123,18 @@ class MediaAsset(Resource):
     def get_list(self):
         alist=[]
         self.bundle=self.auth_filter()
+        thumbRetriever=[]
         for d in self.bundle:
             alist.append(self.model.make_part(d["@graph"],config.APIHOST,self.request.args.get("part","details")))
+            thumbRetriever.extend(alist[-1].get("fromYt"))
+            alist[-1].pop("fromYt",None)
+        ytThumbs=getYtThumbs(thumbRetriever)
+        for vid in alist:
+            for image in vid["ma:image"]:
+                if image.get("ytId"):
+                    image["thumb"] = ytThumbs[image["ytId"]]["thumb"]
+                    image["poster"] = ytThumbs[image["ytId"]]["poster"]
+                    image.pop("ytId",None)
         return mongo_jsonify(alist)
         
     def set_resource(self):
@@ -159,23 +169,30 @@ class MediaAsset(Resource):
         elif payload["@graph"]["type"]=="yt":
             prefix="http://youtu.be"
             needs_ext=False
+        fromYt=[]
         for location in payload["@graph"]["ma:locator"]:
             if needs_ext:
                 ext=location["ma:hasFormat"].split("/")[-1]
                 loc=".".join([location["@id"],ext])
                 poster=uri_pattern(location["@id"]+".png",config.HOST+"/posters")
                 thumb=uri_pattern(location["@id"]+"_thumb.png",config.HOST+"/posters")
+                payload["@graph"]["ma:image"].append({"poster":poster,"thumb":thumb})
             else:
                 loc=location["@id"]
-                poster,thumb=getYtThumbs(loc)
+                fromYt.append(loc)
+                payload["@graph"]["ma:image"].append({"ytId":loc})
             payload["@graph"]["url"].append(uri_pattern(loc,prefix))
-            payload["@graph"]["ma:image"].append({"poster":poster,"thumb":thumb})
+        ytThumbs=getYtThumbs(fromYt)
+        for image in payload["@graph"]["ma:image"]:
+            if image.get("ytId"):
+                image["thumb"] = ytThumbs[image["ytId"]]["thumb"]
+                image["poster"] = ytThumbs[image["ytId"]]["poster"]
+                image.pop("ytId",None)
         for annot in payload["@graph"]["ma:isMemberOf"]:
             coll=ags.find_one({"_id":annot["@id"]})
             annot["title"]=coll["@graph"]["dc:title"]
-	if "ma:hasRelatedResource" in payload["@graph"]:
-	    for track in payload["@graph"]["ma:hasRelatedResource"]:
-	    	track["@id"]=uri_pattern(track["@id"],config.HOST+"/text")
+        for track in payload["@graph"].get("ma:hasRelatedResource"):
+            track["@id"]=uri_pattern(track["@id"],config.HOST+"/text")
         return mongo_jsonify(payload["@graph"])
 
     def set_attrs(self):
@@ -284,6 +301,7 @@ class AssetGroup(Resource):
             payload["@graph"]["videos"]=[]
             if not is_enrolled(payload):
                 v=self.auth_filter(v)
+            thumbRetriever=[]
             for vid in v:
                 if self.request.args.get("full",False):
                     resource=uri_pattern(vid["@graph"]["pid"],config.APIHOST+"/video")    
@@ -298,14 +316,24 @@ class AssetGroup(Resource):
                         if needs_ext:
                             poster=uri_pattern(location["@id"]+".png",config.HOST+"/posters")
                             thumb=uri_pattern(location["@id"]+"_thumb.png",config.HOST+"/posters")
+                            vid["@graph"]["ma:image"].append({"poster":poster,"thumb":thumb})
                         else:
                             loc=location["@id"]
-                            poster,thumb=getYtThumbs(loc)
-                        vid["@graph"]["ma:image"].append({"poster":poster,"thumb":thumb})
+                            vid["@graph"]["ma:image"].append({"ytId":loc})
+                            thumbRetriever.append(loc)
                     payload["@graph"]['videos'].append(vid["@graph"])
                 else:
                     payload["@graph"]["videos"].append(assets.Video.make_part(vid["@graph"],config.APIHOST,self.request.args.get("part","details")))
+                    thumbRetriever.extend(payload["@graph"]["videos"][-1].get("fromYt"))
+                    payload["@graph"]["videos"][-1].pop("fromYt",None)
             payload["@graph"]["type"]=resolve_type(payload["@graph"]["dc:type"])
+            ytThumbs=getYtThumbs(thumbRetriever)
+            for vid in payload["@graph"]["videos"]:
+                for image in vid["ma:image"]:
+                    if image.get("ytId"):
+                        image["thumb"] = ytThumbs[image["ytId"]]["thumb"]
+                        image["poster"] = ytThumbs[image["ytId"]]["poster"]
+                        image.pop("ytId",None)
             return mongo_jsonify(payload["@graph"])
         else:
             return mongo_jsonify({})

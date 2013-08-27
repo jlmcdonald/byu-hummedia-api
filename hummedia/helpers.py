@@ -166,6 +166,8 @@ class Resource():
     def acl_filter(self,allowed=["public"],username="unauth",role=None,bundle=None):
         if not bundle:
             bundle=self.bundle
+        if role=="student":
+            allowed=[]
         if type(bundle)==cursor.Cursor:
             bundle=list(bundle)
             for obj in bundle[:]:
@@ -346,18 +348,16 @@ def resolve_type(t):
 def uri_pattern(id,host=""):
     return "%s/%s" % (host,id)
 
-def getYtThumbs(loc=None):
-    if loc:
-        req=Request(YT_SERVICE+"&id=%s" % (loc))
+def getYtThumbs(ids=[]):
+    ytThumbs={}
+    if len(ids):
+        req=Request(YT_SERVICE+"&id=%s" % (",".join(ids)))
         res=urlopen(req)
         j=json.loads(res.read())
         res.close()
-        poster=j["items"][0]["snippet"]["thumbnails"]["high"]["url"]
-        thumb=j["items"][0]["snippet"]["thumbnails"]["default"]["url"]
-    else:
-        poster=None
-        thumb=None
-    return poster,thumb
+        for vid in j["items"]:
+            ytThumbs[vid["id"]]={"poster":vid["snippet"]["thumbnails"]["high"]["url"],"thumb":vid["snippet"]["thumbnails"]["default"]["url"]}
+    return ytThumbs
 
 def getCurrentSem():
     today=datetime.now()
