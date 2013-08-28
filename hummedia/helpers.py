@@ -259,7 +259,10 @@ def get_enrollments():
     headerVal = byu_ws_sdk.get_http_authorization_header(BYU_WS_ID, BYU_SHARED_SECRET, byu_ws_sdk.KEY_TYPE_API,byu_ws_sdk.ENCODING_NONCE,actor=get_user(),url=url,httpMethod=byu_ws_sdk.HTTP_METHOD_GET,actorInHash=True)
     res=requests.get(url, headers={'Authorization': headerVal})
     courses=[]
-    content=json.loads(res.content)['WeeklySchedService']['response']
+    try:
+	content=json.loads(res.content)['WeeklySchedService']['response']
+    except ValueError:
+	content={"schedule_table":[]}
     for course in content["schedule_table"]:
         courses.append(" ".join((course['course'],course['section'],content['year_term'])))
     return courses
