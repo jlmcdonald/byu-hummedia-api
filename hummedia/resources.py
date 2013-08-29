@@ -276,7 +276,31 @@ def videoCreationBatch():
             pass
         return json.dumps(files)
     else:
-        return "goodbye"
+        return "coming soon"
+        # from PIL import Image
+        # packet=request.json
+        # for up in packet:
+        #     filepath=unicode("/opt/media/video/migrate/"+up['filepath']
+        #     md=getVideoInfo(filepath.encode('utf-8'))
+        #                 for k in md.keys():
+        #                         if i.has_key(k):
+        #                                 continue
+        #                         else:
+        #                                 i[k]=md[k]
+        #                 poster = "/opt/media/omedia/posters/%s.png" % (id)
+        #                 thumb = "/opt/media/omedia/posters/%s_thumb.png" % (id)
+        #                 cmd = "ffmpeg -i '%s' -r 1 -t 00:00:01 -ss 00:00:30 -f image2 '%s'" % (filepath,poster)
+        #                 system(cmd.encode('utf-8'))
+        #                 chmod(poster,0775)
+        #                 im=Image.open(poster)
+        #                 im.thumbnail((160,90))
+        #                 im.save(thumb)
+        #                 chmod(thumb,0775)
+        #                 if path.isfile(filepath.encode('utf-8')):
+        #                         rename(filepath.encode('utf-8'),"/opt/media/video/%s.mp4" % (id))
+        #                 else:
+        #                         return HttpResponse(json.dumps({"success":False}),mimetype="application/json")
+        #                 m.process(collection=request.POST.get('collection'),videoinfo=i)
 
 class AssetGroup(Resource):
     collection=ags
