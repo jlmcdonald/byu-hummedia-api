@@ -8,6 +8,7 @@ from bson import ObjectId
 from urlparse import urlparse, parse_qs
 import clients, config, json
 from hummedia import app
+from os import system, chmod, chdir, getcwd, listdir, rename, path
 
 db=connection[config.MONGODB_DB]
 ags=db.assetgroups
@@ -260,7 +261,23 @@ class MediaAsset(Resource):
             return self.delete_obj()
         else:
             return action_401()
-            
+
+@app.route('/batch/video/ingest',methods=['GET','POST'])
+def videoCreationBatch():
+    from auth import get_user, superuser
+    if not superuser():
+        return action_401()
+    if request.method=="GET":
+        chdir("/opt/media/video/migrate/")
+        files=listdir(getcwd())
+        try:
+            files.remove(".DS_Store")
+        except ValueError:
+            pass
+        return json.dumps(files)
+    else:
+        return "goodbye"
+
 class AssetGroup(Resource):
     collection=ags
     model=ags.AssetGroup
