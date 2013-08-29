@@ -1,12 +1,13 @@
 from datetime import datetime
 from os.path import splitext
 from models import connection
-from flask import Response, jsonify
-from helpers import Resource, mongo_jsonify, parse_npt, resolve_type, uri_pattern, bundle_400, action_401, is_enrolled, getYtThumbs
+from flask import request, Response, jsonify
+from helpers import Resource, mongo_jsonify, parse_npt, plain_resp, resolve_type, uri_pattern, bundle_400, action_401, is_enrolled, getYtThumbs
 from mongokit import cursor
 from bson import ObjectId
 from urlparse import urlparse, parse_qs
-import clients, config
+import clients, config, json
+from hummedia import app
 
 db=connection[config.MONGODB_DB]
 ags=db.assetgroups
@@ -364,6 +365,14 @@ class AssetGroup(Resource):
 
     def delete_associated(self,id):
         d=assets.update({"@graph.ma:isMemberOf.@id":str(id)},{'$pull': {"@graph.ma:isMemberOf":{"@id":str(id)}}},multi=True)
+
+@app.route('/batch/video/membership',methods=['POST'])
+def videoMembershipBatch():
+    status={}
+    packet=request.json
+    for up in packet:
+        status[up['collection']['id']]=assets.update({'@graph.pid':{'$in':up['videos']}}, {'$addToSet':{"@graph.ma:isMemberOf":{'@id':up['collection']['id'],'title':up['collection']['id']}}},multi=True)
+    return jsonify(status)
 
 class Annotation(Resource):
     collection=annotations
