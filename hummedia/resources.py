@@ -22,6 +22,26 @@ class UserProfile(Resource):
     namespace="hummedia:id/user"
     endpoint="account"
 
+    def get(self,id):
+        q=self.set_query()
+        if id:
+            try:
+                q['_id']=ObjectId(str(id))
+            except Exception as e:
+                return bundle_400("The ID you submitted is malformed.")
+            self.bundle=self.get_bundle(q)
+            if self.bundle:
+                self.bundle=self.auth_filter(self.bundle)
+                if not self.bundle:
+                    return action_401()
+                self.set_resource()
+                return self.serialize_bundle(self.bundle)
+            else:
+                return bundle_404()
+        else:
+            self.bundle=self.collection.find(q)
+            return self.get_list()
+
     def auth_filter(self,bundle=None):
         from auth import get_profile
         atts=get_profile()
