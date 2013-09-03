@@ -219,8 +219,8 @@ class Video(Document):
     def make_part(self,vid,host,part):
         from helpers import uri_pattern, resolve_type
         from config import HOST
-        resource=uri_pattern(vid["pid"],host+"/video")
-        thepart={"ma:title":vid["ma:title"],"pid":vid["pid"],"resource":resource}
+        resource=uri_pattern(vid.get("pid"),host+"/video")
+        thepart={"ma:title":vid["ma:title"],"pid":vid.get("pid"),"resource":resource}
         if part!="snippet":
             thepart["fromYt"]=[]
             thepart["ma:image"]=[]

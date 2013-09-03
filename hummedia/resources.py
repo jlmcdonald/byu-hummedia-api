@@ -224,6 +224,11 @@ class MediaAsset(Resource):
                             for (g,h) in i.items():
                                 membership[g]=str(h)
                             self.bundle["@graph"][k].append(membership)
+                        elif k in ["ma:hasContributor","ma:features","ma:isCopyrightedBy","ma:hasGenre"]:
+                            newdict={}
+                            for (g,h) in i.items():
+                                newdict[g]=unicode(h) if self.model.structure['@graph'][k][0][g]==type(u"") else str(h)
+                            self.bundle["@graph"][k].append(newdict)
                         else:
                             self.bundle["@graph"][k].append(i)    
                 elif k=="dc:date":

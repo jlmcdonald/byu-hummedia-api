@@ -133,9 +133,9 @@ class Resource():
         if self.read_override(obj,username,role):
             return True
         if not self.override_only:
-            if is_nested_obj and (obj["@graph"]["dc:coverage"] in allowed or username in obj["@graph"]["dc:rights"]["read"]):
+            if is_nested_obj and (obj["@graph"]["dc:coverage"] in allowed or username in obj["@graph"]["dc:rights"]["read"] or role=="faculty"):
                 return True
-            elif obj["@graph"]["dc:coverage"] in allowed or username in obj["@graph"]["dc:rights"]["read"] or obj["@graph"]["dc:creator"]==username:
+            elif obj["@graph"]["dc:coverage"] in allowed or username in obj["@graph"]["dc:rights"]["read"] or obj["@graph"]["dc:creator"]==username or role=="faculty":
                 return True
         return False
         
@@ -255,6 +255,8 @@ def get_enrollments():
         return []
     if get_user()=="B3yGtjkIFz":
         return["ENGL 999 001 20135","SPAN 999 001 20135"]
+    if "enrollments" in session:
+        return session.get('enrollments')
     url="https://ws.byu.edu/rest/v1.0/academic/registration/studentschedule/"+get_userid()+"/"+getCurrentSem()
     headerVal = byu_ws_sdk.get_http_authorization_header(BYU_WS_ID, BYU_SHARED_SECRET, byu_ws_sdk.KEY_TYPE_API,byu_ws_sdk.ENCODING_NONCE,actor=get_user(),url=url,httpMethod=byu_ws_sdk.HTTP_METHOD_GET,actorInHash=True)
     res=requests.get(url, headers={'Authorization': headerVal})
@@ -265,6 +267,7 @@ def get_enrollments():
 	content={"schedule_table":[]}
     for course in content["schedule_table"]:
         courses.append(" ".join((course['course'],course['section'],content['year_term'])))
+    session['enrollments']=courses
     return courses
 
 def is_enrolled(obj):
