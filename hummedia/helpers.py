@@ -133,10 +133,7 @@ class Resource():
         if self.read_override(obj,username,role):
             return True
         if not self.override_only:
-            if is_nested_obj and (obj["@graph"]["dc:coverage"] in allowed or username in obj["@graph"]["dc:rights"]["read"] or role=="faculty"):
-                return True
-            elif obj["@graph"]["dc:coverage"] in allowed or username in obj["@graph"]["dc:rights"]["read"] or obj["@graph"]["dc:creator"]==username or role=="faculty":
-                return True
+            return any([obj["@graph"]["dc:coverage"] in allowed,username in obj["@graph"]["dc:rights"]["read"],role=="faculty",not is_nested_obj and obj["@graph"]["dc:creator"]==username])
         return False
         
     def read_override(self,obj,username,role):
@@ -171,9 +168,9 @@ class Resource():
         if type(bundle)==cursor.Cursor:
             bundle=list(bundle)
             for obj in bundle[:]:
-                if not self.acl_read_check(obj,username,allowed,role):
+                if not self.acl_read_check(obj,username,allowed,role=role):
                     bundle.remove(obj)
-        elif not self.acl_read_check(bundle,username,allowed,role):
+        elif not self.acl_read_check(bundle,username,allowed,role=role):
             bundle={}
         return bundle
     
