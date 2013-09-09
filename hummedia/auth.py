@@ -89,7 +89,7 @@ def get_user_from_cas(netid=None,atts=None):
     user=connection.User.find_one(q)
     if user is None:
         user=connection.User()
-        faculty_positions=["activeFulltimeEmployee","activeFulltimeInstructor","activeParttimeEmployee","activeParttimeInstructor"]
+        faculty_positions=["activeFulltimeInstructor","activeParttimeInstructor"]
         user["username"]=netid
         user["firstname"]=unicode(atts["preferredFirstName"])
         user["lastname"]=unicode(atts["preferredSurname"])
