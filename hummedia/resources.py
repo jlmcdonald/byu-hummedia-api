@@ -305,12 +305,12 @@ def videoCreationBatch():
         from omcreator.videoMetadata import getVideoInfo
         packet=request.json
         for up in packet:
-            filepath=unicode("/opt/media/video/migrate/"+up['filepath']
+            filepath=unicode("/opt/media/video/migrate/"+up['filepath'])
             if path.isfile(filepath.encode('utf-8')):
                 md=getVideoInfo(filepath.encode('utf-8'))
                 poster = "/opt/media/posters/%s.png" % (up["id"])
                 thumb = "/opt/media/posters/%s_thumb.png" % (up["id"])
-                webm = "/opt/media/video/%,webm" % (up["id"])
+                webm = "/opt/media/video/%s.webm" % (up["id"])
                 imgcmd = "avconv -i '%s' -r 1 -t 00:00:01 -ss 00:00:30 -f image2 '%s'" % (filepath,poster)
                 system(imgcmd.encode('utf-8'))
                 chmod(poster,0775)
@@ -322,7 +322,7 @@ def videoCreationBatch():
                 webmcmd = "avconv -threads auto -i /opt/media/video/%s.mp4 -c:v libvpx -crf 10 -b:v 768K -c:a libvorbis -deadline realtime -cpu-used -10 %s" % (up["id"],webm)
                 system(webmcmd.encode('utf-8'))
                 chmod(webm,0775)
-                assets.Video.update({"_id":up["pid"]},{$set:{"@graph.ma:frameRate":md["framerate"],"@graph.ma:averageBitRate":md["bitrate"],"@graph.ma:frameWidth":md["width"],"@graph.ma:frameHeight":md["height"],"@graph.ma:duration":int(md["duration"])/60}})
+                assets.Video.update({"_id":up["pid"]},{"$set":{"@graph.ma:frameRate":md["framerate"],"@graph.ma:averageBitRate":md["bitrate"],"@graph.ma:frameWidth":md["width"],"@graph.ma:frameHeight":md["height"],"@graph.ma:duration":int(md["duration"])/60}})
 
 class AssetGroup(Resource):
     collection=ags
