@@ -261,7 +261,7 @@ def get_enrollments():
     try:
 	content=json.loads(res.content)['WeeklySchedService']['response']
     except ValueError:
-	content={"schedule_table":[]}
+        content={"schedule_table":[]}
     for course in content["schedule_table"]:
         courses.append(" ".join((course['course'],course['section'],content['year_term'])))
     session['enrollments']=courses

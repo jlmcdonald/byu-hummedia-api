@@ -301,31 +301,31 @@ def videoCreationBatch():
             pass
         return json.dumps(files)
     else:
-        return "coming soon"
-        # from PIL import Image
-        # packet=request.json
-        # for up in packet:
-        #     filepath=unicode("/opt/media/video/migrate/"+up['filepath']
-        #     md=getVideoInfo(filepath.encode('utf-8'))
-        #                 for k in md.keys():
-        #                         if i.has_key(k):
-        #                                 continue
-        #                         else:
-        #                                 i[k]=md[k]
-        #                 poster = "/opt/media/omedia/posters/%s.png" % (id)
-        #                 thumb = "/opt/media/omedia/posters/%s_thumb.png" % (id)
-        #                 cmd = "ffmpeg -i '%s' -r 1 -t 00:00:01 -ss 00:00:30 -f image2 '%s'" % (filepath,poster)
-        #                 system(cmd.encode('utf-8'))
-        #                 chmod(poster,0775)
-        #                 im=Image.open(poster)
-        #                 im.thumbnail((160,90))
-        #                 im.save(thumb)
-        #                 chmod(thumb,0775)
-        #                 if path.isfile(filepath.encode('utf-8')):
-        #                         rename(filepath.encode('utf-8'),"/opt/media/video/%s.mp4" % (id))
-        #                 else:
-        #                         return HttpResponse(json.dumps({"success":False}),mimetype="application/json")
-        #                 m.process(collection=request.POST.get('collection'),videoinfo=i)
+        from PIL import Image
+        from omcreator.videoMetadata import getVideoInfo
+        packet=request.json
+        for up in packet:
+            filepath=unicode("/opt/media/video/migrate/"+up['filepath'])
+	    if path.isfile("/opt/media/video/%s.mp4" % (up['id'])):
+		return bundle_400("That file already exists; try another unique ID.")
+            if path.isfile(filepath.encode('utf-8')):
+                md=getVideoInfo(filepath.encode('utf-8'))
+                poster = "/opt/media/posters/%s.png" % (up["id"])
+                thumb = "/opt/media/posters/%s_thumb.png" % (up["id"])
+                webm = "/opt/media/video/%s.webm" % (up["id"])
+                imgcmd = "avconv -i '%s' -r 1 -t 00:00:01 -ss 00:00:30 -f image2 '%s'" % (filepath,poster)
+                system(imgcmd.encode('utf-8'))
+                chmod(poster,0775)
+                im=Image.open(poster)
+                im.thumbnail((160,90))
+                im.save(thumb)
+                chmod(thumb,0775)
+                rename(filepath.encode('utf-8'),"/opt/media/video/%s.mp4" % (up["id"]))
+                #webmcmd = "avconv -threads auto -i /opt/media/video/%s.mp4 -c:v libvpx -crf 10 -b:v 768K -c:a libvorbis -deadline realtime -cpu-used -10 %s" % (up["id"],webm)
+                #system(webmcmd.encode('utf-8'))
+                #chmod(webm,0775)
+                assets.update({"_id":up["pid"]},{"$set":{"@graph.ma:frameRate":md["framerate"],"@graph.ma:averageBitRate":md["bitrate"],"@graph.ma:frameWidth":md["width"],"@graph.ma:frameHeight":md["height"],"@graph.ma:duration":int(md["duration"])/60}})
+	return True
 
 class AssetGroup(Resource):
     collection=ags
