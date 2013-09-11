@@ -23,12 +23,11 @@ class User(Document):
     use_schemaless=True
     structure={
         "username": basestring,
-        "userid": int,
         "email": basestring,
         "firstname": unicode,
         "lastname": unicode,
         "role": basestring,
-        "userid": int,
+        "userid": basestring,
         "superuser": bool,
         "preferredLanguage": basestring,
         "oauth": {

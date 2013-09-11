@@ -28,7 +28,7 @@ def get_user():
     return session.get('username')
 
 def get_userid():
-    return str(session.get('userid'))
+    return session.get('userid')
     
 def get_role():
     return session.get('role')
@@ -89,13 +89,13 @@ def get_user_from_cas(netid=None,atts=None):
     user=connection.User.find_one(q)
     if user is None:
         user=connection.User()
-        faculty_positions=["activeFulltimeEmployee","activeFulltimeInstructor","activeParttimeEmployee","activeParttimeInstructor"]
+        faculty_positions=["activeFulltimeInstructor","activeParttimeInstructor"]
         user["username"]=netid
         user["firstname"]=unicode(atts["preferredFirstName"])
         user["lastname"]=unicode(atts["preferredSurname"])
         user["email"]=atts["emailAddress"]
         user["fullname"]="%s %s" % (user["firstname"],user["lastname"])
-        user["userid"]=int(atts["personId"])
+        user["userid"]=str(atts["personId"])
         for ap in faculty_positions:
             if atts[ap]=="true":
                 user["role"]="faculty"
