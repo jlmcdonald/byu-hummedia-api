@@ -1,5 +1,4 @@
-import shlex
-from subprocess import Popen, PIPE, STDOUT
+import os
 from gearman import GearmanWorker
 from hummedia.config import GEARMAN_SERVERS, MEDIA_DIRECTORY
 
@@ -17,14 +16,13 @@ def generate_webm(gearman_worker, gearman_job):
            -cpu-used -10 %s.webm" % (newfile, newfile)
     cmd = cmd.encode('utf-8')
 
-    response = Popen(shlex.split(cmd), stdout=PIPE, stdin=PIPE, stderr=STDOUT)
-    response.wait()
-
-    if response.returncode != 0:
+    result = os.system(cmd)
+    
+    if result != 0:
         print "TASK FAILURE" # @TODO timestamp
         return "ERROR" # @TODO return something more specific to the client
                 
-    chmod(newfile + ".webm", 0775)
+    os.chmod(newfile + ".webm", 0775)
 
     print "TASK COMPLETE" # @TODO timestamp
     return "COMPLETE" # @TODO return something more specific to the client
