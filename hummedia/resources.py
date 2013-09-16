@@ -323,7 +323,7 @@ def videoCreationBatch():
                 rename(filepath.encode('utf-8'), config.MEDIA_DIRECTORY + up["id"] + ".mp4")
 
                 client = GearmanClient(config.GEARMAN_SERVERS)
-                client.submit_job("generate_webm", up["id"])
+                client.submit_job("generate_webm", str(up["id"]))
                 assets.update({"_id":up["pid"]},{"$set":{"@graph.ma:frameRate":md["framerate"],"@graph.ma:averageBitRate":md["bitrate"],"@graph.ma:frameWidth":md["width"],"@graph.ma:frameHeight":md["height"],"@graph.ma:duration":int(md["duration"])/60}})
 	return True
 
