@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 import os
 from gearman import GearmanWorker
 from hummedia.config import GEARMAN_SERVERS, MEDIA_DIRECTORY
