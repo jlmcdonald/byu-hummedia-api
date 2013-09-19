@@ -324,7 +324,7 @@ def videoCreationBatch():
 
                 client = GearmanClient(config.GEARMAN_SERVERS)
                 client.submit_job("generate_webm", str(up["id"]))
-                assets.update({"_id":up["pid"]},{"$set":{"@graph.ma:frameRate":md["framerate"],"@graph.ma:averageBitRate":md["bitrate"],"@graph.ma:frameWidth":md["width"],"@graph.ma:frameHeight":md["height"],"@graph.ma:duration":int(md["duration"])/60}})
+                assets.update({"_id":up["pid"]},{"$set":{"@graph.ma:frameRate":float(md["framerate"]),"@graph.ma:averageBitRate":int(md["bitrate"]),"@graph.ma:frameWidth":int(md["width"]),"@graph.ma:frameHeight":int(md["height"]),"@graph.ma:duration":int(md["duration"])/60}})
 	return True
 
 class AssetGroup(Resource):
