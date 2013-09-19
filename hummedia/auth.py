@@ -108,7 +108,7 @@ def get_user_from_cas(netid=None,atts=None):
     return {"user":get_user()}
 
 @crossdomain(origin=config.CROSS_DOMAIN_HOSTS,headers=['Origin','x-requested-with','accept','Content-Type', 'Authorization'],credentials=True)
-def auth_redirect(provider="cas",authUser=None):
+def auth_redirect(provider="cas",authUser=None,proxyUser=None):
     if provider=="google":
         th=make_token_header()
         if th:
@@ -121,9 +121,12 @@ def auth_redirect(provider="cas",authUser=None):
                     get_user_from_cas()
                 return redirect(get_redirect_url())
         return redirect(url_for("apiLogin",providerService=provider))
-    elif provider=="authUser" and authUser is not None:
+    elif provider in ["authUser","proxy"] and authUser is not None:
         user=connection.User.find_one({"username":authUser})
-        set_session_vars(user)
+        if provider=="authUser":
+            set_session_vars(user)
+        elif user["superuser"] and proxyUser is not None:
+            set_session_vars(connection.User.find_one({"username":proxyUser}))
     return redirect(get_redirect_url())
 
 @app.route('/account/enrollments',methods=['GET'])
@@ -132,8 +135,9 @@ def enrollmentTest():
 
 @app.route('/account/login',methods=['GET'])
 @app.route('/account/login/<providerService>',methods=['GET','OPTIONS'])
+@app.route('/account/login/<providerService>/<proxyUser>',methods=['GET','OPTIONS'])
 @crossdomain(origin=config.CROSS_DOMAIN_HOSTS,headers=['Origin','x-requested-with','accept','Content-Type', 'Authorization'],credentials=True)
-def apiLogin(providerService="cas"):
+def apiLogin(providerService="cas",proxyUser=None):
     session["redirect"]=request.args.get("r",session.get("redirect"))
     if get_user() and request.args.get("connect") is None:
         return auth_redirect()
@@ -142,8 +146,8 @@ def apiLogin(providerService="cas"):
             return auth_redirect(provider=providerService)
         else:
             return provider.authorize(callback=config.APIHOST+config.GOOGLE_REDIRECT_URI)
-    elif providerService == "authUser":
-        return auth_redirect(providerService,request.headers.get("Authorization"))
+    elif providerService in ["authUser","proxy"]:
+        return auth_redirect(providerService,request.headers.get("Authorization"),proxyUser)
     else:
         return redirect(cas.login_url(config.APIHOST+config.REDIRECT_URI))
         
