@@ -127,7 +127,7 @@ def auth_redirect(provider="cas",authUser=None):
     return redirect(get_redirect_url())
 
 @app.route('/account/enrollments',methods=['GET'])
-def enrollementTest():
+def enrollmentTest():
     return plain_resp(get_enrollments())
 
 @app.route('/account/login',methods=['GET'])
