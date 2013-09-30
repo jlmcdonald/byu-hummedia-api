@@ -19,6 +19,12 @@ def languages():
 	from langs import langs
 	return mongo_jsonify(langs)
 
+@app.route('/courseDepartments',methods=['GET'])
+@crossdomain(origin='*',headers=['origin','x-requested-with','accept','Content-Type'])
+def getCourseDepartments():
+	from programs import programs
+	return mongo_jsonify(programs)
+
 @app.route('/<collection>', methods=['GET','POST','OPTIONS'])
 @app.route('/<collection>/<id>', methods=['GET','POST','PATCH','PUT','DELETE','OPTIONS'])
 @crossdomain(origin=CROSS_DOMAIN_HOSTS,headers=['Origin','x-requested-with','accept','Content-Type'],credentials=True)
