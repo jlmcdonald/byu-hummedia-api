@@ -197,8 +197,8 @@ class MediaAsset(Resource):
             if needs_ext:
                 ext=location["ma:hasFormat"].split("/")[-1]
                 loc=".".join([location["@id"],ext])
-                poster=uri_pattern(location["@id"]+".png",config.HOST+"/posters")
-                thumb=uri_pattern(location["@id"]+"_thumb.png",config.HOST+"/posters")
+                poster=uri_pattern(location["@id"]+".jpg",config.HOST+"/posters")
+                thumb=uri_pattern(location["@id"]+"_thumb.jpg",config.HOST+"/posters")
                 payload["@graph"]["ma:image"].append({"poster":poster,"thumb":thumb})
             else:
                 loc=location["@id"]
@@ -311,9 +311,9 @@ def videoCreationBatch():
 		return bundle_400("That file already exists; try another unique ID.")
             if path.isfile(filepath.encode('utf-8')):
                 md=getVideoInfo(filepath.encode('utf-8'))
-                poster = config.POSTERS_DIRECTORY + "%s.png" % (up["id"])
-                thumb = config.POSTERS_DIRECTORY + "%s_thumb.png" % (up["id"])
-                imgcmd = "avconv -i '%s' -r 1 -t 00:00:01 -ss 00:00:30 -f image2 '%s'" % (filepath,poster)
+                poster = config.POSTERS_DIRECTORY + "%s.jpg" % (up["id"])
+                thumb = config.POSTERS_DIRECTORY + "%s_thumb.jpg" % (up["id"])
+                imgcmd = "avconv -i '%s' -q:v 1 -r 1 -t 00:00:01 -ss 00:00:30 -f image2 '%s'" % (filepath,poster)
                 system(imgcmd.encode('utf-8'))
                 chmod(poster,0775)
                 im=Image.open(poster)
@@ -384,8 +384,8 @@ class AssetGroup(Resource):
                         needs_ext=False
                     for location in vid["@graph"]["ma:locator"]:
                         if needs_ext:
-                            poster=uri_pattern(location["@id"]+".png",config.HOST+"/posters")
-                            thumb=uri_pattern(location["@id"]+"_thumb.png",config.HOST+"/posters")
+                            poster=uri_pattern(location["@id"]+".jpg",config.HOST+"/posters")
+                            thumb=uri_pattern(location["@id"]+"_thumb.jpg",config.HOST+"/posters")
                             vid["@graph"]["ma:image"].append({"poster":poster,"thumb":thumb})
                         else:
                             loc=location["@id"]

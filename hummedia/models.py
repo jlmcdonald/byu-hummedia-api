@@ -225,8 +225,8 @@ class Video(Document):
             thepart["ma:image"]=[]
             for location in vid["ma:locator"]:
                 if resolve_type(vid["dc:type"])=="humvideo":
-                    poster=uri_pattern(location["@id"]+".png",HOST+"/posters")
-                    thumb=uri_pattern(location["@id"]+"_thumb.png",HOST+"/posters")
+                    poster=uri_pattern(location["@id"]+".jpg",HOST+"/posters")
+                    thumb=uri_pattern(location["@id"]+"_thumb.jpg",HOST+"/posters")
                     thepart["ma:image"].append({"poster":poster,"thumb":thumb})
                 else:
                     thepart["ma:image"].append({"ytId":location["@id"]})
