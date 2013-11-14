@@ -445,6 +445,9 @@ class Annotation(Resource):
     model=annotations.AnnotationList
     namespace="hummedia:id/annotation"
     endpoint="annotation"
+
+    def read_override(self,obj,username,role):
+        return True
     
     def set_query(self):
         if self.request.args.get("dc:relation",False):
