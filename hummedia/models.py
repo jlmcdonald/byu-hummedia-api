@@ -74,7 +74,7 @@ class AnnotationList(Document):
           },
         "@graph.dc:creator":"Hummedia",
         "@graph.dc:title":u"New Hummedia Annotation",
-        "@graph.dc:coverage":"BYU",
+        "@graph.dc:coverage":"public",
         "@graph.dc:date":datetime.datetime.utcnow(),
         "@graph.vcp:playSettings": {
             "vcp:audioOffset":0,
