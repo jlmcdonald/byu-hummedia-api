@@ -2,7 +2,7 @@ from datetime import datetime
 from os.path import splitext
 from models import connection
 from flask import request, Response, jsonify
-from helpers import Resource, mongo_jsonify, parse_npt, plain_resp, resolve_type, uri_pattern, bundle_400, action_401, is_enrolled, getYtThumbs
+from helpers import Resource, mongo_jsonify, parse_npt, plain_resp, resolve_type, uri_pattern, bundle_400, action_401, is_enrolled, can_read, getYtThumbs
 from mongokit import cursor
 from bson import ObjectId
 from urlparse import urlparse, parse_qs
@@ -172,14 +172,13 @@ class MediaAsset(Resource):
             self.bundle["@graph"]["dc:creator"]=atts['username']
 
     def read_override(self,obj,username,role):
-        allowed=False
         for parent in obj['@graph']['ma:isMemberOf']:
             id=parent['@id'] if '@id' in parent else None
             c=ags.find_one({"_id":str(id)})
             if c:
-                if is_enrolled(c):
-                    allowed=True
-        return allowed
+                if is_enrolled(c) or can_read(c):
+                    return True
+        return False
         
     def serialize_bundle(self,payload):
         payload["@graph"]["resource"]=uri_pattern(payload["@graph"]["pid"],config.APIHOST+"/"+self.endpoint)    

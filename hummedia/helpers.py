@@ -273,6 +273,13 @@ def is_enrolled(obj):
     except (TypeError,KeyError):
         return False
 
+def can_read(obj):
+    from auth import get_user
+    try:
+        return get_user() in obj["@graph"]["dc:rights"]["read"]
+    except (NameError):
+        return False
+
 def crossdomain(origin=None, methods=None, headers=None, credentials=False,
                 max_age=21600, attach_to_all=True,
                 automatic_options=True,nocache=True):
