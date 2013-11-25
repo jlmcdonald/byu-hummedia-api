@@ -7,7 +7,7 @@ from bson import ObjectId
 from models import connection
 from config import APIHOST, YT_SERVICE, BYU_WS_ID, BYU_SHARED_SECRET
 from urllib2 import Request, urlopen, URLError
-import json, byu_ws_sdk, requests
+import json, byu_ws_sdk, requests, re, os, mimetypes
 
 
 class NoModelException(Exception):
@@ -381,3 +381,40 @@ def getCurrentSem():
     elif today.month in [9,10,11,12]:
         sem="5"
     return str(today.year)+sem
+
+# Found at http://blog.asgaard.co.uk/2012/08/03/http-206-partial-content-for-flask-python
+def send_file_partial(filepath):
+    """ 
+        Simple wrapper around send_file which handles HTTP 206 Partial Content
+        (byte ranges)
+        TODO: handle all send_file args, mirror send_file's error handling
+        (if it has any)
+    """
+    range_header = request.headers.get('Range', None)
+    if not range_header: return Response(file(filepath), mimetype=mimetypes.guess_type(filepath)[0])
+    
+    size = os.path.getsize(filepath)    
+    byte1, byte2 = 0, None
+    
+    m = re.search('(\d+)-(\d*)', range_header)
+    g = m.groups()
+    
+    if g[0]: byte1 = int(g[0])
+    if g[1]: byte2 = int(g[1])
+
+    length = size - byte1
+    if byte2 is not None:
+        length = byte2 - byte1
+    
+    data = None
+    with open(filepath, 'rb') as f:
+        f.seek(byte1)
+        data = f.read(length)
+
+    rv = Response(data, 
+        206,
+        mimetype=mimetypes.guess_type(filepath)[0], 
+        direct_passthrough=True)
+    rv.headers.add('Content-Range', 'bytes {0}-{1}/{2}'.format(byte1, byte1 + length - 1, size))
+
+    return rv
