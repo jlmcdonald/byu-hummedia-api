@@ -2,11 +2,11 @@ from datetime import datetime
 from os.path import splitext
 from models import connection
 from flask import request, Response, jsonify
-from helpers import Resource, mongo_jsonify, parse_npt, plain_resp, resolve_type, uri_pattern, bundle_400, action_401, is_enrolled, can_read, getYtThumbs
+from helpers import Resource, mongo_jsonify, parse_npt, plain_resp, resolve_type, uri_pattern, bundle_400, bundle_404, action_401, is_enrolled, can_read, getYtThumbs, send_file_partial
 from mongokit import cursor
 from bson import ObjectId
 from urlparse import urlparse, parse_qs
-import clients, config, json
+import clients, config, json, re
 from hummedia import app
 from os import system, chmod, chdir, getcwd, listdir, rename, path
 from gearman import GearmanClient
@@ -170,6 +170,32 @@ class MediaAsset(Resource):
         atts=get_profile()
         if not atts['superuser']:
             self.bundle["@graph"]["dc:creator"]=atts['username']
+    
+    # returns a filepath for a given video id and filetype
+    # valid filetypes: mp4, webm
+    def get_filepath(self, id, type="mp4"):
+        whitelist = ["mp4", "webm"]
+        
+        if type not in whitelist: return None
+    
+        try:
+            obj = self.model.find_one({"_id":str(id)})
+            files = obj["@graph"]["ma:locator"]
+            
+            from auth import get_profile
+            atts=get_profile()
+            
+            # TODO: Return something more obvious
+            if not self.read_override(obj, atts["username"], atts["role"]): return None
+            
+            for file in files:
+                if file['ma:hasFormat'] == 'video/' + type:
+                    return config.MEDIA_DIRECTORY + file['@id'] + '.' + type
+
+        except Exception as e:
+            return None
+        
+        return None
 
     def read_override(self,obj,username,role):
         for parent in obj['@graph']['ma:isMemberOf']:
@@ -286,6 +312,20 @@ class MediaAsset(Resource):
             return self.delete_obj()
         else:
             return action_401()
+
+@app.route('/video/<id>/file', methods=['GET'])
+@app.route('/video/<id>/file/<type>', methods=['GET'])
+def File(id, type="mp4"):
+        # videos cannot be watched outside of the allowed referrer, which must be the host followed by /video
+        if not re.compile("^" + config.HOST + "/video/").match(str(request.referrer)):
+            return bundle_404()
+
+        video = MediaAsset(request)
+        filepath = video.get_filepath(id, type)
+        try:
+            return send_file_partial(filepath)
+        except Exception:
+            return bundle_404()
 
 @app.route('/batch/video/ingest',methods=['GET','POST'])
 def videoCreationBatch():
