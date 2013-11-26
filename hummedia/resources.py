@@ -6,7 +6,7 @@ from helpers import Resource, mongo_jsonify, parse_npt, plain_resp, resolve_type
 from mongokit import cursor
 from bson import ObjectId
 from urlparse import urlparse, parse_qs
-import clients, config, json
+import clients, config, json, re
 from hummedia import app
 from os import system, chmod, chdir, getcwd, listdir, rename, path
 from gearman import GearmanClient
@@ -316,10 +316,13 @@ class MediaAsset(Resource):
 @app.route('/video/<id>/file', methods=['GET'])
 @app.route('/video/<id>/file/<type>', methods=['GET'])
 def File(id, type="mp4"):
+        # videos cannot be watched outside of the allowed referrer, which must be the host followed by /video
+        if not re.compile("^" + config.HOST + "/video/").match(str(request.referrer)):
+            return bundle_404()
+
         video = MediaAsset(request)
         filepath = video.get_filepath(id, type)
         try:
-            print filepath
             return send_file_partial(filepath)
         except Exception:
             return bundle_404()
