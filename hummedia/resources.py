@@ -212,7 +212,7 @@ class MediaAsset(Resource):
         payload["@graph"]["url"]=[]
         payload["@graph"]["ma:image"]=[]
         if payload["@graph"]["type"]=="humvideo":
-            prefix=config.HOST+"/"+self.endpoint
+            prefix=config.APIHOST+"/"+self.endpoint
             needs_ext=True
         elif payload["@graph"]["type"]=="yt":
             prefix="http://youtu.be"
@@ -221,7 +221,7 @@ class MediaAsset(Resource):
         for location in payload["@graph"]["ma:locator"]:
             if needs_ext:
                 ext=location["ma:hasFormat"].split("/")[-1]
-                loc=".".join([location["@id"],ext])
+                loc=location["@id"] + "/file/" + ext
                 poster=uri_pattern(location["@id"]+".jpg",config.HOST+"/posters")
                 thumb=uri_pattern(location["@id"]+"_thumb.jpg",config.HOST+"/posters")
                 payload["@graph"]["ma:image"].append({"poster":poster,"thumb":thumb})
