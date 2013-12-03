@@ -175,7 +175,7 @@ class MediaAsset(Resource):
     # valid filetypes: mp4, webm
     def get_filepath(self, id, type="mp4"):
         whitelist = ["mp4", "webm"]
-        
+
         if type not in whitelist: return None
     
         try:
@@ -184,7 +184,7 @@ class MediaAsset(Resource):
             
             from auth import get_profile
             atts=get_profile()
-            
+
             # TODO: Return something more obvious
             if not self.read_override(obj, atts["username"], atts["role"]): return None
             
@@ -221,7 +221,7 @@ class MediaAsset(Resource):
         for location in payload["@graph"]["ma:locator"]:
             if needs_ext:
                 ext=location["ma:hasFormat"].split("/")[-1]
-                loc=location["@id"] + "/file/" + ext
+                loc=payload["_id"] + "/file." + ext
                 poster=uri_pattern(location["@id"]+".jpg",config.HOST+"/posters")
                 thumb=uri_pattern(location["@id"]+"_thumb.jpg",config.HOST+"/posters")
                 payload["@graph"]["ma:image"].append({"poster":poster,"thumb":thumb})
@@ -314,7 +314,7 @@ class MediaAsset(Resource):
             return action_401()
 
 @app.route('/video/<id>/file', methods=['GET'])
-@app.route('/video/<id>/file/<type>', methods=['GET'])
+@app.route('/video/<id>/file.<type>', methods=['GET'])
 def File(id, type="mp4"):
         # videos cannot be watched outside of the allowed referrer, which must be the host followed by /video
         if not re.compile("^" + config.HOST + "/video/").match(str(request.referrer)):

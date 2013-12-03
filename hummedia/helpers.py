@@ -274,9 +274,9 @@ def is_enrolled(obj):
         return False
 
 def can_read(obj):
-    from auth import get_user
+    from auth import get_user, superuser
     try:
-        return get_user() in obj["@graph"]["dc:rights"]["read"]
+        return get_user() in obj["@graph"]["dc:rights"]["read"] or superuser
     except (NameError):
         return False
 
