@@ -2,7 +2,7 @@ from datetime import datetime
 from os.path import splitext
 from models import connection
 from flask import request, Response, jsonify
-from helpers import Resource, mongo_jsonify, parse_npt, plain_resp, resolve_type, uri_pattern, bundle_400, bundle_404, action_401, is_enrolled, can_read, getYtThumbs, send_file_partial
+from helpers import Resource, mongo_jsonify, parse_npt, plain_resp, resolve_type, uri_pattern, bundle_400, bundle_404, action_401, action_501, is_enrolled, can_read, getYtThumbs, send_file_partial
 from mongokit import cursor
 from bson import ObjectId
 from urlparse import urlparse, parse_qs
@@ -16,6 +16,11 @@ ags=db.assetgroups
 assets=db.assets
 annotations=db.annotations
 users=db.users
+
+class NotImplemented(Resource):
+
+    def get(self,id):
+	return action_501()
 
 class UserProfile(Resource):
     collection=users

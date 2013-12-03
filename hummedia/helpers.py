@@ -345,6 +345,9 @@ def bundle_400(e):
 def action_401():
     return Response("You do not have permission to perform that action.",status=401,mimetype="text/plain")
 
+def action_501():
+    return Response("This service has not yet been implemented.",status=501,mimetype="text/plain")
+
 def plain_resp(obj):
     return Response(obj,status=200,mimetype="text/plain")
 

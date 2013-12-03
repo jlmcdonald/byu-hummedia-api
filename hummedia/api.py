@@ -4,7 +4,26 @@ from resources import *
 from config import CROSS_DOMAIN_HOSTS
 from hummedia import app
 
-resource_lookup={"annotation":Annotation,"collection":AssetGroup,"video":MediaAsset, "account":UserProfile}
+resource_lookup={
+	"hummedia": {
+		"annotation":Annotation,
+		"collection":AssetGroup,
+		"video":MediaAsset,
+		"account":UserProfile
+		},
+	"youtube": {
+		"annotation":NotImplemented,
+		"collection":NotImplemented,
+		"video":NotImplemented,
+		"account":UserProfile
+		},
+	"khan": {
+		"annotation":NotImplemented,
+		"collection":NotImplemented,
+		"video":NotImplemented,
+		"account":UserProfile 
+		}
+	}
 
 @app.route('/cookietest',methods=['GET'])
 @crossdomain(origin='*',headers=['origin','x-requested-with','accept','Content-Type'])
@@ -29,12 +48,16 @@ def getCourseDepartments():
 @app.route('/<collection>/<id>', methods=['GET','POST','PATCH','PUT','DELETE','OPTIONS'])
 @crossdomain(origin=CROSS_DOMAIN_HOSTS,headers=['Origin','x-requested-with','accept','Content-Type'],credentials=True)
 def Collection(collection,id=None):
-	if collection in resource_lookup:
-		coll=resource_lookup[collection](request)
+	backend=request.args.get('backend','hummedia')
+	if backend not in resource_lookup:
+		coll=NotImplemented(request)
+		return coll.dispatch(id)
+	elif collection in resource_lookup[backend]:
+		coll=resource_lookup[backend][collection](request)
 		return coll.dispatch(id)
 	else:
 		return endpoint_404()
 
 @app.route('/')
 def index():
-	return jsonify({"API":"Humvideo","Version":2})
+	return jsonify({"API":"Humvideo","Version":2.1})
