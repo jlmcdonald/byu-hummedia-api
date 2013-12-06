@@ -374,8 +374,15 @@ class AssetGroup(Resource):
     override_only_triggers=['enrollment']
     
     def set_query(self):
-        q={"@graph.dc:creator":self.request.args.get("dc:creator")} if "dc:creator" in self.request.args else {}
-        return q
+        if "dc:creator" in self.request.args:
+            return {"@graph.dc:creator":self.request.args.get("dc:creator")}
+        elif "read" in self.request.args:
+            read = self.request.args.get("read")
+            return {"$or": [
+                {"@graph.dc:creator": read},
+                {"@graph.dc:rights.read": {"$in": [read]}},
+            ]}
+        return {}
         
     def get_list(self):
         alist=[]
