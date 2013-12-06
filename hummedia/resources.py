@@ -415,7 +415,7 @@ class AssetGroup(Resource):
         if payload:
             v=assets.find({"@graph.ma:isMemberOf.@id":payload["_id"]})
             payload["@graph"]["videos"]=[]
-            if not is_enrolled(payload):
+            if not is_enrolled(payload) and not can_read(payload):
                 v=self.auth_filter(v)
             thumbRetriever=[]
             for vid in v:
