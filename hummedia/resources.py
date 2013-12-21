@@ -342,7 +342,7 @@ def videoCreationBatch():
         return json.dumps(files)
     else:
         from PIL import Image
-        from omcreator.videoMetadata import getVideoInfo
+        from helpers import getVideoInfo
         packet=request.json
         for up in packet:
             filepath=unicode(config.INGEST_DIRECTORY + up['filepath'])
@@ -363,7 +363,7 @@ def videoCreationBatch():
 
                 client = GearmanClient(config.GEARMAN_SERVERS)
                 client.submit_job("generate_webm", str(up["id"]))
-                assets.update({"_id":up["pid"]},{"$set":{"@graph.ma:frameRate":float(md["framerate"]),"@graph.ma:averageBitRate":int(md["bitrate"]),"@graph.ma:frameWidth":int(md["width"]),"@graph.ma:frameHeight":int(md["height"]),"@graph.ma:duration":int(md["duration"])/60}})
+                assets.update({"_id":up["pid"]},{"$set":{"@graph.ma:frameRate":float(md["framerate"]),"@graph.ma:averageBitRate":int(md["bitrate"]),"@graph.ma:frameWidth":int(md["width"]),"@graph.ma:frameHeight":int(md["height"]),"@graph.ma:duration":int( round(md["duration"]) )/60}})
 	return True
 
 class AssetGroup(Resource):
