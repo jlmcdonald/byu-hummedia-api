@@ -36,4 +36,4 @@ GEARMAN_SERVERS = ['localhost:4730'] # specify host and port
 
 INGEST_DIRECTORY = "/opt/media/video/migrate/" # where ingestable media are found
 MEDIA_DIRECTORY = "/opt/media/video/" # where ingested media should be moved to
-POSTER_DIRECTORY = "/opt/media/posters/"
+POSTERS_DIRECTORY = "/opt/media/posters/"
