@@ -8,7 +8,7 @@ from bson import ObjectId
 from urlparse import urlparse, parse_qs
 import clients, config, json, re
 from hummedia import app
-from os import system, chmod, chdir, getcwd, listdir, rename, path
+from os import system, chmod, chdir, getcwd, listdir, path
 from gearman import GearmanClient
 
 db=connection[config.MONGODB_DB]
@@ -342,6 +342,7 @@ def videoCreationBatch():
         return json.dumps(files)
     else:
         from PIL import Image
+        from shutil import move
         from helpers import getVideoInfo
         packet=request.json
         for up in packet:
@@ -359,7 +360,7 @@ def videoCreationBatch():
                 im.thumbnail((160,90))
                 im.save(thumb)
                 chmod(thumb,0775)
-                rename(filepath.encode('utf-8'), config.MEDIA_DIRECTORY + up["id"] + ".mp4")
+                move(filepath.encode('utf-8'), config.MEDIA_DIRECTORY + up["id"] + ".mp4")
 
                 client = GearmanClient(config.GEARMAN_SERVERS)
                 client.submit_job("generate_webm", str(up["id"]))
