@@ -2,7 +2,7 @@ from datetime import datetime
 from os.path import splitext
 from models import connection
 from flask import request, Response, jsonify
-from helpers import Resource, mongo_jsonify, parse_npt, plain_resp, resolve_type, uri_pattern, bundle_400, bundle_404, action_401, action_501, is_enrolled, can_read, getYtThumbs, send_file_partial
+from helpers import Resource, mongo_jsonify, parse_npt, plain_resp, resolve_type, uri_pattern, bundle_400, bundle_404, action_401, action_405, action_501, is_enrolled, can_read, getYtThumbs, send_file_partial
 from mongokit import cursor
 from bson import ObjectId
 from urlparse import urlparse, parse_qs
@@ -10,6 +10,7 @@ import clients, config, json, re
 from hummedia import app
 from os import system, chmod, chdir, getcwd, listdir, rename, path
 from gearman import GearmanClient
+from apiclient.discovery import build
 
 db=connection[config.MONGODB_DB]
 ags=db.assetgroups
@@ -21,6 +22,42 @@ class NotImplemented(Resource):
 
     def get(self,id):
 	return action_501()
+    def post(self,id):
+	return action_501()
+    def put(self,id):
+	return action_501()
+    def patch(self,id):
+	return action_501()
+    def delete(self,id):
+	return action_501()
+
+class YTVideo():
+
+    def __init__(self,request=None):
+	self.request=request
+	self.DEVELOPER_KEY = config.GOOGLE_API_KEY
+	self.YOUTUBE_API_SERVICE_NAME = "youtube"
+	self.YOUTUBE_API_VERSION = "v3"
+
+    def youtube_search(self,q):
+	youtube = build(self.YOUTUBE_API_SERVICE_NAME, self.YOUTUBE_API_VERSION,developerKey=self.DEVELOPER_KEY)
+	search_response = youtube.search().list(q=q,part="id,snippet",type="youtube#video",maxResults=50).execute()
+	videos = []
+#	for search_result in search_response.get("items", []):
+#		videos.append("%s (%s)" % (search_result["snippet"]["title"],search_result["id"]["videoId"]))
+#	return videos
+	return search_response.get("items",[])
+
+    def get(self,id=None):
+	if not id:
+		return mongo_jsonify(self.youtube_search(self.request.args.get('q','Humanities')))
+
+    def dispatch(self,id):
+        methods={"GET":self.get,"POST":self.not_allowed,"PUT":self.not_allowed,"PATCH":self.not_allowed,"DELETE":self.not_allowed}
+        return methods[self.request.method](id)
+
+    def not_allowed(self,id):
+	return action_405()
 
 class UserProfile(Resource):
     collection=users

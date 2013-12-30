@@ -14,7 +14,7 @@ resource_lookup={
 	"youtube": {
 		"annotation":NotImplemented,
 		"collection":NotImplemented,
-		"video":NotImplemented,
+		"video":YTVideo,
 		"account":UserProfile
 		},
 	"khan": {
