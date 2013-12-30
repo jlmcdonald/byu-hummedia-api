@@ -5,11 +5,9 @@ from models import connection
 from urllib2 import Request, urlopen, URLError
 from providers import *
 from helpers import crossdomain, plain_resp, get_enrollments
-from interfaces import ItsdangerousSessionInterface
 from os import environ
 
 from hummedia import app
-#app.session_interface = ItsdangerousSessionInterface()
 app.secret_key=config.SECRET_KEY
 app.session_cookie_name=config.COOKIE_NAME
 app.config['SESSION_COOKIE_DOMAIN']=config.COOKIE_DOMAIN
