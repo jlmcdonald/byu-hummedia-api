@@ -418,3 +418,23 @@ def send_file_partial(filepath):
     rv.headers.add('Content-Range', 'bytes {0}-{1}/{2}'.format(byte1, byte1 + length - 1, size))
 
     return rv
+
+def getVideoInfo(filename):
+    from subprocess import check_output
+
+    output  =  check_output(
+        ['avprobe', filename, '-show_streams', '-show_format', '-loglevel', 'quiet'])
+    
+    # ensure that the data we have is that for the video. doesn't include audio data
+    matches = re.search(
+        r'\[STREAM\]\s*(.*?codec_type=video.*?)\s*\[/STREAM\].*\[FORMAT\]\s*(.*)\[/FORMAT\]',
+        output,
+        re.DOTALL)
+    
+    lines = matches.group(1).splitlines() + matches.group(2).splitlines()
+    data = {line.split('=')[0].strip(): line.split('=')[1].strip() for line in lines}
+    
+    framerate = data['avg_frame_rate'].split('/')
+    data['framerate'] = round( float(framerate[0]) / float(framerate[1]), 3)
+    
+    return data
