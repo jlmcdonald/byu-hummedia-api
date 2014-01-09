@@ -274,9 +274,9 @@ def is_enrolled(obj):
         return False
 
 def can_read(obj):
-    from auth import get_user, superuser
+    from auth import get_user, is_superuser
     try:
-        return get_user() in obj["@graph"]["dc:rights"]["read"] or superuser
+        return get_user() in obj["@graph"]["dc:rights"]["read"] or is_superuser
     except (NameError):
         return False
 
@@ -436,5 +436,5 @@ def getVideoInfo(filename):
     
     framerate = data['avg_frame_rate'].split('/')
     data['framerate'] = round( float(framerate[0]) / float(framerate[1]), 3)
-    
+    data['bitrate']=data['bit_rate']
     return data

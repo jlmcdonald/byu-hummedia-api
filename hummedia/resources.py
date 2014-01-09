@@ -290,19 +290,23 @@ class MediaAsset(Resource):
                     if p[1]=="youtube.com":
                         file=parse_qs(p[4])["v"]
                         ext="mp4"
+			commit=True
                     elif p[1]=="youtu.be":
                         file=p[2].split("/")[-1]
                         ext="mp4"
+			commit=True
                     else:
                         path=p[2].split("/")[-1]
                         file,ext=splitext(path)
                         ext=ext.replace(".","")
+			commit=False
                     loc={"@id":file,"ma:hasFormat":"video/"+ext}
                     if ext=="mp4":
                         loc["ma:hasCompression"]={"@id":"http://www.freebase.com/view/en/h_264_mpeg_4_avc","name": "avc.42E01E"}
                     elif ext=="webm":
                         loc["ma:hasCompression"]={"@id":"http://www.freebase.com/m/0c02yk5","name":"vp8.0"}
-                    self.bundle["@graph"]["ma:locator"].append(loc)
+		    if commit:
+	                self.bundle["@graph"]["ma:locator"].append(loc)
 
     def delete(self,id):
         from auth import get_profile
@@ -329,8 +333,8 @@ def File(id, type="mp4"):
 
 @app.route('/batch/video/ingest',methods=['GET','POST'])
 def videoCreationBatch():
-    from auth import get_user, superuser
-    if not superuser():
+    from auth import get_user, is_superuser
+    if not is_superuser():
         return action_401()
     if request.method=="GET":
         chdir(config.INGEST_DIRECTORY)
@@ -364,7 +368,7 @@ def videoCreationBatch():
 
                 client = GearmanClient(config.GEARMAN_SERVERS)
                 client.submit_job("generate_webm", str(up["id"]))
-                assets.update({"_id":up["pid"]},{"$set":{"@graph.ma:frameRate":float(md["framerate"]),"@graph.ma:averageBitRate":int(md["bitrate"]),"@graph.ma:frameWidth":int(md["width"]),"@graph.ma:frameHeight":int(md["height"]),"@graph.ma:duration":int( round(md["duration"]) )/60}})
+                assets.update({"_id":up["pid"]},{"$set":{"@graph.ma:frameRate":float(md["framerate"]),"@graph.ma:averageBitRate":int(float(md["bitrate"])),"@graph.ma:frameWidth":int(md["width"]),"@graph.ma:frameHeight":int(md["height"]),"@graph.ma:duration":int( round(float(md["duration"])) )/60}})
 	return True
 
 class AssetGroup(Resource):

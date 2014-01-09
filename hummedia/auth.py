@@ -33,7 +33,7 @@ def get_userid():
 def get_role():
     return session.get('role')
     
-def superuser():
+def is_superuser():
     return session.get('superuser')
     
 def get_profile():
