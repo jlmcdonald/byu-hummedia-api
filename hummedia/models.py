@@ -224,6 +224,8 @@ class Video(Document):
             thepart["fromYt"]=[]
             thepart["ma:image"]=[]
             for location in vid["ma:locator"]:
+                if location['@id'] is None:
+                    continue
                 if resolve_type(vid["dc:type"])=="humvideo":
                     poster=uri_pattern(location["@id"]+".jpg",HOST+"/posters")
                     thumb=uri_pattern(location["@id"]+"_thumb.jpg",HOST+"/posters")
