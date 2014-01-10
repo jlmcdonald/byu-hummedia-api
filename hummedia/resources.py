@@ -285,29 +285,33 @@ class MediaAsset(Resource):
                 if type(v)!=type([]):
                     v=[v]
                 self.bundle["@graph"]["ma:locator"]=[]
-                loc = None
+                locator_found = False
+                vid = assets.find_one({'_id': str(id)})
+                if vid:
+                    locator_found = True
+                    self.bundle['@graph']['ma:locator'] = vid['@graph']['ma:locator']
                 for i in v:
                     p=urlparse(i)
                     if p[1]=="youtube.com":
                         file=parse_qs(p[4])["v"]
                         ext="mp4"
+                        commit = True
                     elif p[1]=="youtu.be":
                         file=p[2].split("/")[-1]
                         ext="mp4"
+                        commit = True
                     else:
                         path=p[2].split("/")[-1]
                         file,ext=splitext(path)
                         ext=ext.replace(".","")
-                        vid = assets.find_one({'_id': str(id)})
-                        if vid:
-                            loc = vid['@graph']['ma:locator']
-                    if loc is None:
+                        commit = False
+                    if commit or not locator_found:
                         loc={"@id":file,"ma:hasFormat":"video/"+ext}
-                    if ext=="mp4":
-                        loc["ma:hasCompression"]={"@id":"http://www.freebase.com/view/en/h_264_mpeg_4_avc","name": "avc.42E01E"}
-                    elif ext=="webm":
-                        loc["ma:hasCompression"]={"@id":"http://www.freebase.com/m/0c02yk5","name":"vp8.0"}
-	                self.bundle["@graph"]["ma:locator"].append(loc)
+                        if ext=="mp4":
+                            loc["ma:hasCompression"]={"@id":"http://www.freebase.com/view/en/h_264_mpeg_4_avc","name": "avc.42E01E"}
+                        elif ext=="webm":
+                            loc["ma:hasCompression"]={"@id":"http://www.freebase.com/m/0c02yk5","name":"vp8.0"}
+                        self.bundle["@graph"]["ma:locator"].append(loc)
 
     def delete(self,id):
         from auth import get_profile
