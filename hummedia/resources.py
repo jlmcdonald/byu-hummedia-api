@@ -285,27 +285,28 @@ class MediaAsset(Resource):
                 if type(v)!=type([]):
                     v=[v]
                 self.bundle["@graph"]["ma:locator"]=[]
+                loc = None
                 for i in v:
                     p=urlparse(i)
                     if p[1]=="youtube.com":
                         file=parse_qs(p[4])["v"]
                         ext="mp4"
-			commit=True
                     elif p[1]=="youtu.be":
                         file=p[2].split("/")[-1]
                         ext="mp4"
-			commit=True
                     else:
                         path=p[2].split("/")[-1]
                         file,ext=splitext(path)
                         ext=ext.replace(".","")
-			commit=False
-                    loc={"@id":file,"ma:hasFormat":"video/"+ext}
+                        vid = assets.find_one({'_id': str(id)})
+                        if vid:
+                            loc = vid['@graph']['ma:locator']
+                    if loc is None:
+                        loc={"@id":file,"ma:hasFormat":"video/"+ext}
                     if ext=="mp4":
                         loc["ma:hasCompression"]={"@id":"http://www.freebase.com/view/en/h_264_mpeg_4_avc","name": "avc.42E01E"}
                     elif ext=="webm":
                         loc["ma:hasCompression"]={"@id":"http://www.freebase.com/m/0c02yk5","name":"vp8.0"}
-		    if commit:
 	                self.bundle["@graph"]["ma:locator"].append(loc)
 
     def delete(self,id):
@@ -368,7 +369,25 @@ def videoCreationBatch():
 
                 client = GearmanClient(config.GEARMAN_SERVERS)
                 client.submit_job("generate_webm", str(up["id"]))
-                assets.update({"_id":up["pid"]},{"$set":{"@graph.ma:frameRate":float(md["framerate"]),"@graph.ma:averageBitRate":int(float(md["bitrate"])),"@graph.ma:frameWidth":int(md["width"]),"@graph.ma:frameHeight":int(md["height"]),"@graph.ma:duration":int( round(float(md["duration"])) )/60}})
+                assets.update({"_id":up["pid"]},{"$set":{
+                    "@graph.ma:frameRate":float(md["framerate"]),
+                    "@graph.ma:averageBitRate":int(float(md["bitrate"])),
+                    "@graph.ma:frameWidth":int(md["width"]),
+                    "@graph.ma:frameHeight":int(md["height"]),
+                    "@graph.ma:duration":int( round(float(md["duration"])) )/60,
+                    "@graph.ma:locator": [
+                        {
+                            "@id": up["id"],
+                            "ma:hasFormat": "video/mp4",
+                            "ma:hasCompression": {"@id":"http://www.freebase.com/view/en/h_264_mpeg_4_avc","name": "avc.42E01E"}
+                        },
+                        {
+                            "@id": up["id"],
+                            "ma:hasFormat": "video/webm",
+                            "ma:hasCompression": {"@id":"http://www.freebase.com/m/0c02yk5","name":"vp8.0"}
+                        }
+                    ]
+                }})
 	return "Success"
 
 class AssetGroup(Resource):
