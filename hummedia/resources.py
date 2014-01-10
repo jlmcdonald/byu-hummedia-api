@@ -286,10 +286,10 @@ class MediaAsset(Resource):
                     v=[v]
                 self.bundle["@graph"]["ma:locator"]=[]
                 locator_found = False
-                vid = assets.find_one({'_id': str(id)})
+                vid = assets.find_one({'_id': str(self.request.json.get('pid',"INGEST"))})
                 if vid:
-                    locator_found = True
-                    self.bundle['@graph']['ma:locator'] = vid['@graph']['ma:locator']
+                    	locator_found = True
+                    	self.bundle['@graph']['ma:locator'] = vid['@graph']['ma:locator']
                 for i in v:
                     p=urlparse(i)
                     if p[1]=="youtube.com":
@@ -362,13 +362,6 @@ def videoCreationBatch():
                 md=getVideoInfo(filepath.encode('utf-8'))
                 poster = config.POSTERS_DIRECTORY + "%s.jpg" % (up["id"])
                 thumb = config.POSTERS_DIRECTORY + "%s_thumb.jpg" % (up["id"])
-                imgcmd = "avconv -i '%s' -q:v 1 -r 1 -t 00:00:01 -ss 00:00:30 -f image2 '%s'" % (filepath,poster)
-                system(imgcmd.encode('utf-8'))
-                chmod(poster,0775)
-                im=Image.open(poster)
-                im.thumbnail((160,90))
-                im.save(thumb)
-                chmod(thumb,0775)
                 move(filepath.encode('utf-8'), config.MEDIA_DIRECTORY + up["id"] + ".mp4")
 
                 client = GearmanClient(config.GEARMAN_SERVERS)
@@ -392,6 +385,13 @@ def videoCreationBatch():
                         }
                     ]
                 }})
+                imgcmd = "avconv -i '%s' -q:v 1 -r 1 -t 00:00:01 -ss 00:00:30 -f image2 '%s'" % (filepath,poster)
+                system(imgcmd.encode('utf-8'))
+                chmod(poster,0775)
+                im=Image.open(poster)
+                im.thumbnail((160,90))
+                im.save(thumb)
+                chmod(thumb,0775)
 	return "Success"
 
 class AssetGroup(Resource):
