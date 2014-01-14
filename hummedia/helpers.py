@@ -144,7 +144,7 @@ class Resource():
         atts=get_profile()
         if atts['superuser'] or (atts['role']=='faculty' and not bundle):
             return True
-        if atts['role']=="faculty" and bundle:
+        if bundle:
             if bundle["@graph"].get("dc:creator")==atts['username'] or atts['username'] in bundle['@graph']["dc:rights"]["write"]:
                 return True
 	return False
