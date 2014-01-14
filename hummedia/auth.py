@@ -38,7 +38,7 @@ def is_superuser():
     
 def get_profile():
     atts={}
-    for att in ['username','userid','role','superuser','fullname','preferredLanguage']:
+    for att in ['username','userid','role','superuser','fullname','preferredLanguage','ta']:
         atts[att]=session.get(att)
     if (atts['username'] is None or atts['username']=="") and session.get('oauth'):
 	atts['oauth']=session.get('oauth')['provider']
@@ -52,7 +52,7 @@ def get_redirect_url():
     return urlparse.urlunparse(url_parts)
   
 def set_session_vars(user):
-    for att in ('username','userid','role','superuser','fullname','preferredLanguage'):
+    for att in ('username','userid','role','superuser','fullname','preferredLanguage','ta'):
         if att in user:
             session[att]=user[att]
 
@@ -80,7 +80,7 @@ def get_user_from_oauth(provider,atts,access_token=None):
     if user is None:
         session["oauth"]={"provider":provider,"id":atts['id'],"access_token":access_token,"email":atts['email']}
         user={"username":"","role":"","superuser":False,"fullname":"","preferredLanguage":"en"}
-    return {"username":user['username'],"role":user['role'],"superuser":user["superuser"],"fullname":user["fullname"],"preferredLanguage":user["preferredLanguage"]}
+    return {"username":user['username'],"role":user['role'],"superuser":user["superuser"],"fullname":user["fullname"],"preferredLanguage":user["preferredLanguage"], "ta":user["ta"]}
     
 def get_user_from_cas(netid=None,atts=None):
     if not netid:
