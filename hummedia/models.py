@@ -29,6 +29,7 @@ class User(Document):
         "role": basestring,
         "userid": basestring,
         "superuser": bool,
+        "ta":bool,
         "preferredLanguage": basestring,
         "oauth": {
             "google": {"id": basestring, "email": basestring, "access_token": list},
@@ -37,7 +38,7 @@ class User(Document):
         }
     }
     required_fields=["username","email"]
-    default_values={"username":"","email":"","preferredLanguage":"en","role":"student","superuser":False}
+    default_values={"username":"","email":"","preferredLanguage":"en","role":"student","superuser":False,"ta":False}
     
 @connection.register
 class AnnotationList(Document):

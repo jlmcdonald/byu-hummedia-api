@@ -144,7 +144,7 @@ class Resource():
         atts=get_profile()
         if atts['superuser'] or (atts['role']=='faculty' and not bundle):
             return True
-        if atts['role']=="faculty" and bundle:
+        if bundle:
             if bundle["@graph"].get("dc:creator")==atts['username'] or atts['username'] in bundle['@graph']["dc:rights"]["write"]:
                 return True
 	return False
@@ -163,8 +163,6 @@ class Resource():
     def acl_filter(self,allowed=["public"],username="unauth",role=None,bundle=None):
         if not bundle:
             bundle=self.bundle
-        if role=="student":
-            allowed=[]
         if type(bundle)==cursor.Cursor:
             bundle=list(bundle)
             for obj in bundle[:]:
@@ -271,13 +269,6 @@ def is_enrolled(obj):
     try:
         return not set(get_enrollments()).isdisjoint(obj["@graph"]["dc:relation"])
     except (TypeError,KeyError):
-        return False
-
-def can_read(obj):
-    from auth import get_user, is_superuser
-    try:
-        return get_user() in obj["@graph"]["dc:rights"]["read"] or is_superuser
-    except (NameError):
         return False
 
 def crossdomain(origin=None, methods=None, headers=None, credentials=False,

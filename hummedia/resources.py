@@ -2,7 +2,7 @@ from datetime import datetime
 from os.path import splitext
 from models import connection
 from flask import request, Response, jsonify
-from helpers import Resource, mongo_jsonify, parse_npt, plain_resp, resolve_type, uri_pattern, bundle_400, bundle_404, action_401, is_enrolled, can_read, getYtThumbs, send_file_partial
+from helpers import Resource, mongo_jsonify, parse_npt, plain_resp, resolve_type, uri_pattern, bundle_400, bundle_404, action_401, is_enrolled, getYtThumbs, send_file_partial
 from mongokit import cursor
 from bson import ObjectId
 from urlparse import urlparse, parse_qs
@@ -198,11 +198,29 @@ class MediaAsset(Resource):
         return None
 
     def read_override(self,obj,username,role):
-        for parent in obj['@graph']['ma:isMemberOf']:
-            id=parent['@id'] if '@id' in parent else None
-            c=ags.find_one({"_id":str(id)})
-            if c:
-                if is_enrolled(c) or can_read(c):
+        from auth import get_profile
+        atts=get_profile()
+        if atts['superuser']:
+            return True
+        for c in obj["@graph"]["ma:isMemberOf"]:
+            c=ags.find_one({"_id":c["@id"]})
+            if c["@graph"].get("dc:creator")==atts['username'] or atts['username'] in c['@graph']["dc:rights"]["read"]:
+                return True
+            if is_enrolled(c):
+                return True
+        return False
+
+    def acl_write_check(self,bundle=None):
+        from auth import get_profile
+        atts=get_profile()
+        if atts['superuser'] or (atts['role']=='faculty' and not bundle):
+            return True
+        if bundle:
+            if bundle["@graph"].get("dc:creator")==atts['username'] or atts['username'] in bundle['@graph']["dc:rights"]["write"]:
+                return True
+            for coll in bundle["@graph"]["ma:isMemberOf"]:
+                coll=ags.find_one({"_id":coll["@id"]})
+                if coll["@graph"].get("dc:creator")==atts['username'] or atts['username'] in coll['@graph']["dc:rights"]["write"]:
                     return True
         return False
         
@@ -443,7 +461,7 @@ class AssetGroup(Resource):
         if payload:
             v=assets.find({"@graph.ma:isMemberOf.@id":payload["_id"]})
             payload["@graph"]["videos"]=[]
-            if not is_enrolled(payload) and not can_read(payload):
+            if not is_enrolled(payload):
                 v=self.auth_filter(v)
             thumbRetriever=[]
             for vid in v:
