@@ -205,6 +205,20 @@ class MediaAsset(Resource):
                 if is_enrolled(c) or can_read(c):
                     return True
         return False
+
+    def acl_write_check(self,bundle=None):
+        from auth import get_profile
+        atts=get_profile()
+        if atts['superuser'] or (atts['role']=='faculty' and not bundle):
+            return True
+        if bundle:
+            if bundle["@graph"].get("dc:creator")==atts['username'] or atts['username'] in bundle['@graph']["dc:rights"]["write"]:
+                return True
+            for coll in bundle["@graph"]["ma:isMemberOf"]:
+                coll=ags.find_one({"_id":coll["@id"]})
+                if coll["@graph"].get("dc:creator")==atts['username'] or atts['username'] in coll['@graph']["dc:rights"]["write"]:
+                    return True
+        return False
         
     def serialize_bundle(self,payload):
         payload["@graph"]["resource"]=uri_pattern(payload["@graph"]["pid"],config.APIHOST+"/"+self.endpoint)    
