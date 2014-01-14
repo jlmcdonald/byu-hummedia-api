@@ -326,7 +326,7 @@ class MediaAsset(Resource):
 @app.route('/video/<id>/file.<type>', methods=['GET'])
 def File(id, type="mp4"):
         # videos cannot be watched outside of the allowed referrer, which must be the host followed by /video
-        if not re.compile("^" + config.HOST + "/video/").match(str(request.referrer)):
+        if not re.compile("^" + config.HOST).match(str(request.referrer)):
             return bundle_404()
 
         video = MediaAsset(request)
@@ -356,16 +356,14 @@ def videoCreationBatch():
         packet=request.json
         for up in packet:
             filepath=unicode(config.INGEST_DIRECTORY + up['filepath'])
-	    if path.isfile(config.MEDIA_DIRECTORY + up['id'] + ".mp4"):
+	    new_file=unicode(config.MEDIA_DIRECTORY + up['id'] + ".mp4")
+	    if path.isfile(new_file):
 		return bundle_400("That file already exists; try another unique ID.")
             if path.isfile(filepath.encode('utf-8')):
                 md=getVideoInfo(filepath.encode('utf-8'))
                 poster = config.POSTERS_DIRECTORY + "%s.jpg" % (up["id"])
                 thumb = config.POSTERS_DIRECTORY + "%s_thumb.jpg" % (up["id"])
-                move(filepath.encode('utf-8'), config.MEDIA_DIRECTORY + up["id"] + ".mp4")
-
-                client = GearmanClient(config.GEARMAN_SERVERS)
-                client.submit_job("generate_webm", str(up["id"]))
+                move(filepath.encode('utf-8'), new_file.encode('utf-8'))
                 assets.update({"_id":up["pid"]},{"$set":{
                     "@graph.ma:frameRate":float(md["framerate"]),
                     "@graph.ma:averageBitRate":int(float(md["bitrate"])),
@@ -385,13 +383,15 @@ def videoCreationBatch():
                         }
                     ]
                 }})
-                imgcmd = "avconv -i '%s' -q:v 1 -r 1 -t 00:00:01 -ss 00:00:30 -f image2 '%s'" % (filepath,poster)
+                imgcmd = "avconv -i '%s' -q:v 1 -r 1 -t 00:00:01 -ss 00:00:30 -f image2 '%s'" % (new_file,poster)
                 system(imgcmd.encode('utf-8'))
                 chmod(poster,0775)
                 im=Image.open(poster)
                 im.thumbnail((160,90))
                 im.save(thumb)
                 chmod(thumb,0775)
+                client = GearmanClient(config.GEARMAN_SERVERS)
+                client.submit_job("generate_webm", str(up["id"]))
 	return "Success"
 
 class AssetGroup(Resource):
