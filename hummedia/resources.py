@@ -203,10 +203,10 @@ class MediaAsset(Resource):
         if atts['superuser']:
             return True
         for c in obj["@graph"]["ma:isMemberOf"]:
-            c=ags.find_one({"_id":c["@id"]})
-            if c["@graph"].get("dc:creator")==atts['username'] or atts['username'] in c['@graph']["dc:rights"]["read"]:
+            coll=ags.find_one({"_id":c["@id"]})
+            if coll["@graph"].get("dc:creator")==atts['username'] or atts['username'] in coll['@graph']["dc:rights"]["read"]:
                 return True
-            if is_enrolled(c):
+            if is_enrolled(coll):
                 return True
         return False
 
@@ -640,14 +640,7 @@ class Annotation(Resource):
             else:
                 self.bundle["@graph"][k]=v
         if self.request.method == "POST":
-            m=connection.Video.find_one(self.bundle["@graph"]["dc:relation"])
             if "collection" in self.request.args:
-                for c in m["@graph"]["ma:isMemberOf"]:
-                    if c["@id"]==self.request.args["collection"]:
-                        c["restrictor"]=self.bundle["_id"]
-                        m.save()
-                        break
+		assets.update({"_id":self.bundle["@graph"]["dc:relation"],"@graph.ma:isMemberOf.@id":self.request.args["collection"]},{"$set":{"@graph.ma:isMemberOf.$.@restrictor":self.bundle["_id"]}})
             else:
-                if self.bundle["_id"] not in m["@graph"]["ma:hasPolicy"]:
-                    m["@graph"]["ma:hasPolicy"].append(self.bundle["_id"]) 
-                    m.save()
+		assets.update({"_id":self.bundle["@graph"]["dc:relation"]},{"$addToSet":{"@graph.ma:hasPolicy":self.bundle["_id"]}})
