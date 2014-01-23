@@ -445,8 +445,10 @@ class AssetGroup(Resource):
         
     def read_override(self,obj,username,role):
         if resolve_type(obj["@graph"]["dc:type"]) in ["course_collection","themed_collection"]:
-            return role=="student" and is_enrolled(obj)
-        else:
+            return role=="student" and is_enrolled(obj) 
+        elif resolve_type(self.bundle["@graph"]["dc:type"]) in ["course_collection","themed_collection"]:
+            return role=="student" and (is_enrolled(self.bundle) or username in self.bundle["@graph"]["dc:rights"]["read"])
+	else:
             return False
             
     def preprocess_bundle(self):
@@ -641,6 +643,6 @@ class Annotation(Resource):
                 self.bundle["@graph"][k]=v
         if self.request.method == "POST":
             if "collection" in self.request.args:
-		assets.update({"_id":self.bundle["@graph"]["dc:relation"],"@graph.ma:isMemberOf.@id":self.request.args["collection"]},{"$set":{"@graph.ma:isMemberOf.$.@restrictor":self.bundle["_id"]}})
+		assets.update({"_id":self.bundle["@graph"]["dc:relation"],"@graph.ma:isMemberOf.@id":self.request.args["collection"]},{"$set":{"@graph.ma:isMemberOf.$.restrictor":self.bundle["_id"]}})
             else:
 		assets.update({"_id":self.bundle["@graph"]["dc:relation"]},{"$addToSet":{"@graph.ma:hasPolicy":self.bundle["_id"]}})
