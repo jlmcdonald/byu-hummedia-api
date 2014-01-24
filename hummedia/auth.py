@@ -85,12 +85,12 @@ def get_user_from_oauth(provider,atts,access_token=None):
 def get_user_from_cas(netid=None,atts=None):
     if not netid:
         netid=get_user()
-    q = {"username":netid}
+    q = {"username":netid.lower()}
     user=connection.User.find_one(q)
     if user is None:
         user=connection.User()
         faculty_positions=["activeFulltimeInstructor","activeParttimeInstructor"]
-        user["username"]=netid
+        user["username"]=netid.lower()
         user["firstname"]=unicode(atts["preferredFirstName"])
         user["lastname"]=unicode(atts["preferredSurname"])
         user["email"]=atts["emailAddress"]
