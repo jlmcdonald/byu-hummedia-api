@@ -2,11 +2,11 @@ from datetime import datetime
 from os.path import splitext
 from models import connection
 from flask import request, Response, jsonify
-from helpers import Resource, mongo_jsonify, parse_npt, plain_resp, resolve_type, uri_pattern, bundle_400, bundle_404, action_401, is_enrolled, getYtThumbs, send_file_partial
+from helpers import Resource, mongo_jsonify, parse_npt, plain_resp, resolve_type, uri_pattern, bundle_400, bundle_404, action_401, is_enrolled, getYtThumbs
 from mongokit import cursor
 from bson import ObjectId
 from urlparse import urlparse, parse_qs
-import clients, config, json, re
+import clients, config, json, re, hashlib, time
 from hummedia import app
 from os import system, chmod, chdir, getcwd, listdir, path
 from gearman import GearmanClient
@@ -230,7 +230,7 @@ class MediaAsset(Resource):
         payload["@graph"]["url"]=[]
         payload["@graph"]["ma:image"]=[]
         if payload["@graph"]["type"]=="humvideo":
-            prefix=config.APIHOST+"/"+self.endpoint
+            prefix=CONFIG.HOST + '/'
             needs_ext=True
         elif payload["@graph"]["type"]=="yt":
             prefix="http://youtu.be"
@@ -239,7 +239,17 @@ class MediaAsset(Resource):
         for location in payload["@graph"]["ma:locator"]:
             if needs_ext:
                 ext=location["ma:hasFormat"].split("/")[-1]
-                loc=payload["_id"] + "/file." + ext
+                fileName="/" + location["@id"] + "." + ext
+                hexTime="{0:x}".format(int(time.time()))
+                token = hashlib.md5(''.join([
+                    config.AUTH_TOKEN_SECRET,
+                    fileName,
+                    hexTime
+                ])).hexdigest() 
+                loc = ''.join([
+                    config.AUTH_TOKEN_PREFIX,
+                    token, "/", hexTime, fileName
+                ])
                 poster=uri_pattern(location["@id"]+".jpg",config.HOST+"/posters")
                 thumb=uri_pattern(location["@id"]+"_thumb.jpg",config.HOST+"/posters")
                 payload["@graph"]["ma:image"].append({"poster":poster,"thumb":thumb})
@@ -339,20 +349,6 @@ class MediaAsset(Resource):
             return self.delete_obj()
         else:
             return action_401()
-
-@app.route('/video/<id>/file', methods=['GET'])
-@app.route('/video/<id>/file.<type>', methods=['GET'])
-def File(id, type="mp4"):
-        # videos cannot be watched outside of the allowed referrer, which must be the host followed by /video
-        if not re.compile("^" + config.HOST).match(str(request.referrer)):
-            return bundle_404()
-
-        video = MediaAsset(request)
-        filepath = video.get_filepath(id, type)
-        try:
-            return send_file_partial(filepath)
-        except Exception:
-            return bundle_404()
 
 @app.route('/batch/video/ingest',methods=['GET','POST'])
 def videoCreationBatch():
