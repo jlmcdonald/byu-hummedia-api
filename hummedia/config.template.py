@@ -40,5 +40,6 @@ POSTERS_DIRECTORY = "/opt/media/posters/"
 
 # For the auth token module in Apache, for restricting access to videos
 # These should match whatever is present in your Apache configuration file
-AUTH_TOKEN_SECRET      = "secret key"
+AUTH_TOKEN_SECRET      = "secret string"
 AUTH_TOKEN_PREFIX      = "/movies/"
+AUTH_TOKEN_IP          = True # limits by IP address. requires module v. 1.0.6+

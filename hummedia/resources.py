@@ -171,32 +171,6 @@ class MediaAsset(Resource):
         if not atts['superuser']:
             self.bundle["@graph"]["dc:creator"]=atts['username']
     
-    # returns a filepath for a given video id and filetype
-    # valid filetypes: mp4, webm
-    def get_filepath(self, id, type="mp4"):
-        whitelist = ["mp4", "webm"]
-
-        if type not in whitelist: return None
-    
-        try:
-            obj = self.model.find_one({"_id":str(id)})
-            files = obj["@graph"]["ma:locator"]
-            
-            from auth import get_profile
-            atts=get_profile()
-
-            # TODO: Return something more obvious
-            if not self.read_override(obj, atts["username"], atts["role"]): return None
-            
-            for file in files:
-                if file['ma:hasFormat'] == 'video/' + type:
-                    return config.MEDIA_DIRECTORY + file['@id'] + '.' + type
-
-        except Exception as e:
-            return None
-        
-        return None
-
     def read_override(self,obj,username,role):
         from auth import get_profile
         atts=get_profile()
@@ -230,7 +204,7 @@ class MediaAsset(Resource):
         payload["@graph"]["url"]=[]
         payload["@graph"]["ma:image"]=[]
         if payload["@graph"]["type"]=="humvideo":
-            prefix=CONFIG.HOST + '/'
+            prefix=config.HOST + '/'
             needs_ext=True
         elif payload["@graph"]["type"]=="yt":
             prefix="http://youtu.be"
@@ -239,13 +213,14 @@ class MediaAsset(Resource):
         for location in payload["@graph"]["ma:locator"]:
             if needs_ext:
                 ext=location["ma:hasFormat"].split("/")[-1]
-                fileName="/" + location["@id"] + "." + ext
+                fileName= '/' + location["@id"] + "." + ext
                 hexTime="{0:x}".format(int(time.time()))
                 token = hashlib.md5(''.join([
                     config.AUTH_TOKEN_SECRET,
                     fileName,
-                    hexTime
-                ])).hexdigest() 
+                    hexTime,
+                    request.remote_addr if config.AUTH_TOKEN_IP else '' 
+                ])).hexdigest()
                 loc = ''.join([
                     config.AUTH_TOKEN_PREFIX,
                     token, "/", hexTime, fileName
