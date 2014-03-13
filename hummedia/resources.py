@@ -109,7 +109,7 @@ class MediaAsset(Resource):
     override_only_triggers=['enrollment']
     
     def set_disallowed_atts(self):
-        self.disallowed_atts=["dc:identifier","pid","dc:type"]
+        self.disallowed_atts=["dc:identifier","pid","dc:type","url"]
         from auth import get_profile
         atts=get_profile()
         if not atts['superuser']:
@@ -278,6 +278,13 @@ class MediaAsset(Resource):
                             for (g,h) in i.items():
                                 newdict[g]=unicode(h) if self.model.structure['@graph'][k][0][g]==type(u"") else str(h)
                             self.bundle["@graph"][k].append(newdict)
+			elif k=="ma:hasRelatedResource":
+                            newdict={}
+                            for (g,h) in i.items():
+				if g=="@id" and "/" in h:
+					h=h.rsplit("/",1)[1]
+				newdict[g]=str(h)
+			    self.bundle["@graph"][k].append(newdict)
                         else:
                             self.bundle["@graph"][k].append(i)    
                 elif k=="dc:date":
@@ -314,7 +321,8 @@ class MediaAsset(Resource):
                             loc["ma:hasCompression"]={"@id":"http://www.freebase.com/view/en/h_264_mpeg_4_avc","name": "avc.42E01E"}
                         elif ext=="webm":
                             loc["ma:hasCompression"]={"@id":"http://www.freebase.com/m/0c02yk5","name":"vp8.0"}
-                        self.bundle["@graph"]["ma:locator"].append(loc)
+			if loc not in self.bundle["@graph"]["ma:locator"]:
+	                        self.bundle["@graph"]["ma:locator"].append(loc)
 
     def delete(self,id):
         from auth import get_profile
