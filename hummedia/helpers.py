@@ -355,9 +355,14 @@ def getYtThumbs(ids=[]):
     ytThumbs={}
     if len(ids):
         req=Request(YT_SERVICE+"&id=%s" % (",".join(ids)))
-        res=urlopen(req)
-        j=json.loads(res.read())
-        res.close()
+
+        try:
+          res=urlopen(req)
+          j=json.loads(res.read())
+          res.close()
+        except:
+          return dict.fromkeys(ids, {'poster': None, 'thumb': None})
+
         for vid in j["items"]:
             ytThumbs[vid["id"]]={"poster":vid["snippet"]["thumbnails"]["high"]["url"],"thumb":vid["snippet"]["thumbnails"]["default"]["url"]}
     return ytThumbs
