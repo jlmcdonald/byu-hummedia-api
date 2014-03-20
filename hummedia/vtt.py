@@ -83,13 +83,20 @@ def shift_time(input_f, output_f, offset_secs):
            "\n"
 
   rx = re.compile("^(\d{2}:\d{2}:\d{2}\.\d{3}) --> (\d{2}:\d{2}:\d{2}\.\d{3})\s*$")
+  
+  close_out = False #whether or not we should close our input and output files
+  close_in = False
+  read_me = input_f
+  write_me = output_f
 
-  file(output_f, 'w').close() # clear output
-  read_me  = file(input_f, 'r')
-  write_me = file(output_f, 'w+')
+  if not hasattr(input_f, 'read'):
+    read_me = open(input_f, 'r')
+  
+  if not hasattr(output_f, 'write'):
+    write_me = open(output_f, 'w')
 
   for line in read_me:
     write_me.write( rx.sub(do_sub, line) )
 
-  read_me.close()
-  write_me.close()
+  if close_in:  read_me.close()
+  if close_out: write_me.close()
