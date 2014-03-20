@@ -1,14 +1,17 @@
 '''
-  Takes an input SRT filename and writes out VTT contents to the given output
-  filename
+  Takes an input SRT file or filename and writes out VTT contents to the given 
+  output file or filename
 '''
 def from_srt(input, output):
   import re
 
   timestamp = "(\d{2}:\d{2}:\d{2}),(\d{3}\s*-->\s*\d{2}:\d{2}:\d{2}),(\d{3})\s*"
-  file = open(input,'r')
-  contents = file.read()
-  file.close()
+
+  try:
+    contents = input.read()
+  except (IOError, AttributeError):
+    with open(input, 'r') as f:
+      contents = f.read()
   
   # strip carriage returns for consistency's sake
   contents = re.sub("\r\n","\n",contents)
@@ -22,10 +25,12 @@ def from_srt(input, output):
 
   # append correct header
   contents = "WEBVTT\n\n" + contents
-
-  out = open(output, 'w')
-  out.write(contents)
-  out.close()
+  
+  try:
+    output.write(contents)
+  except (IOError, AttributeError):
+    with open(output, 'w') as o:
+      o.write(contents)
 
 '''
   Takes the time codes in the input file and adds (or removes) the offset in
