@@ -1,0 +1,6 @@
+flask
+flask_oauth
+mongokit
+byu_ws_sdk
+lxml
+gearman
