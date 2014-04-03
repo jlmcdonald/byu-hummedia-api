@@ -35,5 +35,6 @@ langs=[
 	["tr","Turkish"],
 	["uk","Ukrainian"],
 	["vi","Vietnamese"],
-	["cy","Welsh"]
+	["cy","Welsh"],
+	["wo","Wolof"]
 ]
