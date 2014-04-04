@@ -1,9 +1,16 @@
 language: python
+services: mongodb
 
 python:
-  - "2.7"
+  - 2.7
+
+cache:
+  directories:
+    - $HOME/.pip-cache
 
 install: 
-  - "pip install -r requirements.txt"
+  - pip install -r requirements.txt --download-cache $HOME/.pip-cache
 
-script: "py.test hummedia/test"
+before_script: cp hummedia/config.template.py hummedia/config.py
+  
+script: py.test hummedia/test
