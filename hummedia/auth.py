@@ -79,8 +79,8 @@ def get_user_from_oauth(provider,atts,access_token=None):
     user=connection.User.find_one(q)
     if user is None:
         session["oauth"]={"provider":provider,"id":atts['id'],"access_token":access_token,"email":atts['email']}
-        user={"username":"","role":"","superuser":False,"fullname":"","preferredLanguage":"en"}
-    return {"username":user['username'],"role":user['role'],"superuser":user["superuser"],"fullname":user["fullname"],"preferredLanguage":user["preferredLanguage"], "ta":user["ta"]}
+        user={"username":"","role":"","superuser":False,"fullname":"","preferredLanguage":"en", "ta":False}
+    return {"username":user['username'],"role":user['role'],"superuser":user["superuser"],"fullname":user["fullname"],"preferredLanguage":user["preferredLanguage"], "ta":user.get("ta",False)}
     
 def get_user_from_cas(netid=None,atts=None):
     if not netid:
