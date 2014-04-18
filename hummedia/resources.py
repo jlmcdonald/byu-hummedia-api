@@ -250,6 +250,15 @@ class MediaAsset(Resource):
         return mongo_jsonify(payload["@graph"])
 
     def set_attrs(self):
+        if request.files['subtitle']:
+            subs = self.make_vtt(request.files['subtitle'],
+                   name = request.form.get('name'),
+                   lang = request.form.get('lang'))
+            self.bundle["@graph"]["ma:hasRelatedResource"].append(subs)
+
+        if self.request.json is None:
+            return
+
         if "type" in self.request.json:
             self.bundle["@graph"]["dc:type"]="hummedia:type/"+self.request.json["type"]
         for (k,v) in self.request.json.items():
@@ -323,6 +332,42 @@ class MediaAsset(Resource):
                             loc["ma:hasCompression"]={"@id":"http://www.freebase.com/m/0c02yk5","name":"vp8.0"}
 			if loc not in self.bundle["@graph"]["ma:locator"]:
 	                        self.bundle["@graph"]["ma:locator"].append(loc)
+    
+
+    def make_vtt(self, subs, name='Default', lang='en'):
+        '''
+        Given the subs file, copies to the subtitle directory as a VTT file.
+        Returns a dictionary with information about the VTT
+        '''
+
+        import vtt
+        import os
+        import uuid
+        from werkzeug.utils import secure_filename
+
+        if not name: name = 'Default'
+        if not lang: lang = 'en'
+
+        ext = subs.filename.split('.')[-1]
+        filename = secure_filename(subs.filename.split('.', 1)[0]) \
+                   + str(uuid.uuid4()) + '.vtt'
+
+        output = os.path.join(config.SUBTITLE_DIRECTORY, filename) 
+       
+        if ext == 'srt':
+            vtt.from_srt(subs, output)
+        elif ext == 'vtt':
+            subs.save(output)
+        else:
+            raise Exception("Extension must be .vtt or .srt. Given file: "\
+                + filename + "\nExtension: " + ext)
+
+        return {
+            '@id': filename,
+            'type': 'vtt',
+            'name': name,
+            'language': lang
+        }
 
     def delete(self,id):
         from auth import get_profile
