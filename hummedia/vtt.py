@@ -1,6 +1,7 @@
 import re
 import codecs
 import contextlib
+import chardet
 
 '''
 Taken from Ned Batchelder: http://stackoverflow.com/a/6783680/390977
@@ -28,7 +29,15 @@ def from_srt(input_f, output_f):
   timestamp = "\n(\d{2}:\d{2}:\d{2}),(\d{3}\s*-->\s*\d{2}:\d{2}:\d{2}),(\d{3})\s*\n"
 
   with vtt_open(input_f, 'r') as f:
-    contents = f.read().decode('utf-8')
+    orig = f.read()
+    detect = chardet.detect(orig)
+    encoding = detect['encoding']
+    confidence = detect['confidence']
+
+    if confidence < 0.9:
+      encoding = 'cp1252' # standard for SubRip files
+
+    contents = orig.decode(encoding)
   
   # strip carriage returns for consistency's sake
   contents = re.sub("\r\n","\n",contents)

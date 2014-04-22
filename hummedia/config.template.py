@@ -37,6 +37,7 @@ GEARMAN_SERVERS = ['localhost:4730'] # specify host and port
 INGEST_DIRECTORY = "/opt/media/video/migrate/" # where ingestable media are found
 MEDIA_DIRECTORY = "/opt/media/video/" # where ingested media should be moved to
 POSTERS_DIRECTORY = "/opt/media/posters/"
+SUBTITLE_DIRECTORY = "/opt/text/"
 
 # For the auth token module in Apache, for restricting access to videos
 # These should match whatever is present in your Apache configuration file
