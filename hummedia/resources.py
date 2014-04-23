@@ -250,7 +250,7 @@ class MediaAsset(Resource):
         return mongo_jsonify(payload["@graph"])
 
     def set_attrs(self):
-        if request.files['subtitle']:
+        if "subtitle" in request.files:
             subs = self.make_vtt(request.files['subtitle'],
                    name = request.form.get('name'),
                    lang = request.form.get('lang'))
