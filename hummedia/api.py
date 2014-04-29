@@ -35,6 +35,16 @@ def Collection(collection,id=None):
 	else:
 		return endpoint_404()
 
+@app.route('/text/<filename>',methods=['DELETE','PUT'])
+def modify_subtitle(filename):
+    video = MediaAsset(request)
+
+    if request.method == 'DELETE':
+        return video.delete_subtitle(filename)
+    elif request.method == 'PUT':
+        replacement = request.files['subtitle']
+        return video.update_subtitle(filename, replacement)
+
 @app.route('/')
 def index():
 	return jsonify({"API":"Humvideo","Version":2})

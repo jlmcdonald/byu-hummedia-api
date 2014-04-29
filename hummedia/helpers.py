@@ -8,6 +8,7 @@ from models import connection
 from config import APIHOST, YT_SERVICE, BYU_WS_ID, BYU_SHARED_SECRET
 from urllib2 import Request, urlopen, URLError
 import json, byu_ws_sdk, requests, re, os, mimetypes
+import time
 
 
 class NoModelException(Exception):

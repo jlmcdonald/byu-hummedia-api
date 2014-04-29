@@ -6,7 +6,7 @@ This is a subtitle
 2
 01:59:55,139 --> 02:10:00,000
 Subtitles should look something like
-this: 01:59:55,139 --> 02:10:00,000
+this: 01:59:55,139 -- 02:10:00,000
 
 3
 02:20:03,188 --> 02:20:59,035

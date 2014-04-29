@@ -17,6 +17,12 @@ def test_from_srt_file(ASSETS):
   compare = open(ASSETS + 'subs.vtt', 'r')
   assert o.getvalue() == compare.read()
 
+def test_from_bad_srt(ASSETS):
+  i = open(ASSETS + 'fake.srt')
+  o = io.BytesIO()
+  with pytest.raises(Exception):
+    vtt.from_srt(i, o)
+
 def test_iso_8859_srt(ASSETS):
   i = open(ASSETS + 'ISO-8859.srt')
   o = io.BytesIO()
@@ -37,6 +43,12 @@ def test_shift_time_file(ASSETS):
   i.close()
   compare = open(ASSETS + 'subs+10.vtt', 'r')
   assert o.getvalue() == compare.read()
+
+def test_validate_vtt(ASSETS):
+  assert vtt.is_valid(ASSETS + 'subs.vtt') is True
+
+def test_invalid_vtt(ASSETS):
+  assert vtt.is_valid(ASSETS + 'invalid.vtt') is False
 
 def test_upload_srt(ASSETS, ACCOUNTS, app):
   app.login(ACCOUNTS["SUPERUSER"])
@@ -125,3 +137,93 @@ def test_upload_duplicate_named_subtitles(ASSETS, ACCOUNTS, app):
   file2 = data['ma:hasRelatedResource'][1]['@id']
   assert file1 != file2
 
+def test_delete_subtitles(ASSETS, ACCOUNTS, app):
+  import os
+
+  app.login(ACCOUNTS["SUPERUSER"])
+  response = None
+
+  with open(ASSETS + 'subs.vtt') as f:
+    data = {
+        'subtitle': (f, 'subs.vtt')
+    }
+    response = app.post('/video', data=data)
+  
+  data = json.loads(response.data)
+  pid  = data['pid']
+  file = data['ma:hasRelatedResource'][0]['@id']
+  filename = file.split('/')[-1]
+  
+  response = app.delete('/text/' + filename)
+  assert response.status_code == 200, "Could not delete file"
+  
+  response = app.delete('/text/' + filename)
+  assert response.status_code == 404, "Deleted file not returning 404"
+
+  response = app.get('/video/' + pid)
+  data = json.loads(response.data)
+  assert len(data['ma:hasRelatedResource']) == 0, "RelatedResource not deletd"
+
+  filepath = config.SUBTITLE_DIRECTORY + filename
+  assert os.path.isfile(filepath) == False, "File still exists on server."
+
+def test_delete_subtitles(ASSETS, ACCOUNTS, app):
+  import os
+
+  app.login(ACCOUNTS["SUPERUSER"])
+  response = None
+
+  with open(ASSETS + 'subs.vtt') as f:
+    data = {
+        'subtitle': (f, 'subs.vtt')
+    }
+    response = app.post('/video', data=data)
+  
+  data = json.loads(response.data)
+  pid  = data['pid']
+  file = data['ma:hasRelatedResource'][0]['@id']
+  filename = file.split('/')[-1]
+  
+  response = app.delete('/text/' + filename)
+  assert response.status_code == 200, "Invalid status code " + str(response.status_code)
+  
+  response = app.delete('/text/' + filename)
+  assert response.status_code == 404, "Deleted file not returning 404"
+
+  response = app.get('/video/' + pid)
+  data = json.loads(response.data)
+  assert len(data['ma:hasRelatedResource']) == 0, "RelatedResource not deleted"
+
+  filepath = config.SUBTITLE_DIRECTORY + filename
+  assert os.path.isfile(filepath) == False, "File still exists on server."
+
+def test_replace_subtitle(ASSETS, ACCOUNTS, app):
+  app.login(ACCOUNTS["SUPERUSER"])
+  response = None
+
+  with open(ASSETS + 'subs.vtt') as f:
+    data = {
+        'subtitle': (f, 'subs.vtt')
+    }
+    response = app.post('/video', data=data)
+  
+  data = json.loads(response.data)
+  pid  = data['pid']
+  filename = data['ma:hasRelatedResource'][0]['@id'].split('/')[-1]
+
+  with open(ASSETS + 'subs-different.vtt') as f:
+    data = {'subtitle': (f, 'subs.vtt')}
+    response = app.put('/text/' + filename, data = data)
+
+  assert response.status_code == 200, "Unexpected status code " + str(response.status_code)
+
+  response = app.get('/video/' + pid)
+  data = json.loads(response.data)
+
+  assert len(data['ma:hasRelatedResource']) == 1, "Incorrect # of resources"
+
+  filename = data['ma:hasRelatedResource'][0]['@id'].split('/')[-1]
+  file = open(config.SUBTITLE_DIRECTORY + filename, 'r')
+  orig = open(ASSETS + 'subs.vtt', 'r')
+
+  assert orig.read() != file.read(), "File not replaced"

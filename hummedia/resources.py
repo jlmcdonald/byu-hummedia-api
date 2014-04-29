@@ -251,9 +251,14 @@ class MediaAsset(Resource):
 
     def set_attrs(self):
         if "subtitle" in request.files:
-            subs = self.make_vtt(request.files['subtitle'],
-                   name = request.form.get('name'),
-                   lang = request.form.get('lang'))
+            try:
+                subs = self.make_vtt(request.files['subtitle'],
+                       name = request.form.get('name'),
+                       lang = request.form.get('lang'))
+            except:
+                bundle_400("Invalid subtitle uploaded.")
+                return
+
             self.bundle["@graph"]["ma:hasRelatedResource"].append(subs)
 
         if self.request.json is None:
@@ -357,6 +362,8 @@ class MediaAsset(Resource):
         if ext == 'srt':
             vtt.from_srt(subs, output)
         elif ext == 'vtt':
+            if not vtt.is_valid(subs):
+                raise Exception("Invalid VTT file")
             subs.save(output)
         else:
             raise Exception("Extension must be .vtt or .srt. Given file: "\
@@ -377,6 +384,49 @@ class MediaAsset(Resource):
             return self.delete_obj()
         else:
             return action_401()
+    
+    def update_subtitle(self, filename, new_file):
+        from helpers import endpoint_404
+
+        query = {
+          "@graph.ma:hasRelatedResource":{"$elemMatch": {"@id":filename}}
+        }
+
+        bundle = self.model.find_one(query)
+
+        if bundle is None:
+            return endpoint_404() 
+        
+        if not self.acl_write_check(bundle):
+          return action_401()
+        
+        new_file.save(config.SUBTITLE_DIRECTORY + filename)
+        
+        return mongo_jsonify(bundle)
+    
+    def delete_subtitle(self, filename):
+        from os import remove
+        from helpers import endpoint_404
+
+        query = {
+          "@graph.ma:hasRelatedResource":{"$elemMatch": {"@id":filename}}
+        }
+
+        bundle = self.model.find_one(query)
+
+        if bundle is None:
+            return endpoint_404() 
+        
+        if not self.acl_write_check(bundle):
+            return action_401()
+
+        l = bundle.get("@graph").get("ma:hasRelatedResource")
+        l[:] = [d for d in l if d.get('@id') != filename]
+        bundle.save()
+        
+        remove(config.SUBTITLE_DIRECTORY + filename)
+
+        return mongo_jsonify(bundle)
 
 @app.route('/batch/video/ingest',methods=['GET','POST'])
 def videoCreationBatch():
