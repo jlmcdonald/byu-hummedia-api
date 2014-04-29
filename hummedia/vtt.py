@@ -2,14 +2,18 @@ import re
 import codecs
 import contextlib
 import chardet
+import os
 
-'''
-Taken from Ned Batchelder: http://stackoverflow.com/a/6783680/390977
+VALIDATION_BIN = 'node ' + os.path.dirname(os.path.realpath(__file__)) +\
+                 os.sep + 'validate-vtt.js'
 
-Allows a string to be passed or a file object
-'''
 @contextlib.contextmanager
 def vtt_open(path_or_file, mode):
+  """
+  Taken from Ned Batchelder: http://stackoverflow.com/a/6783680/390977
+
+  Allows a string to be passed or a file object
+  """
   if isinstance(path_or_file, basestring):
     f = file_to_close = open(path_or_file, mode)
   else:
@@ -21,11 +25,31 @@ def vtt_open(path_or_file, mode):
   if file_to_close:
     file_to_close.close()
 
-'''
-  Takes an input SRT file or filename and writes out VTT contents to the given 
-  output file or filename
-'''
+def is_valid(f):
+  """ Returns a boolean representing whether or not the given file is valid
+  File can either be a string representing the path, or a FileStorage object
+  """
+  import tempfile
+  
+  if hasattr(f, 'save'): # for werkzeug.datastructures.FileStorage objects
+    t = tempfile.NamedTemporaryFile() # TODO: pipe contents directly to cmd
+    path = t.name
+    contents = f.read()
+    t.write(contents)
+    t.flush()
+    f.seek(0)
+  else:
+    path = f
+
+  return os.system(VALIDATION_BIN + ' ' + path) == 0
+
 def from_srt(input_f, output_f):
+  """
+    Takes an input SRT file or filename and writes out VTT contents to the given 
+    output file or filename
+  """
+  import tempfile
+
   timestamp = "\n(\d{2}:\d{2}:\d{2}),(\d{3}\s*-->\s*\d{2}:\d{2}:\d{2}),(\d{3})\s*\n"
 
   with vtt_open(input_f, 'r') as f:
@@ -51,25 +75,32 @@ def from_srt(input_f, output_f):
 
   # append correct header
   contents = 'WEBVTT\n\n' + contents
- 
+
+  # validate first
+  f = tempfile.NamedTemporaryFile()
+  f.write(contents.encode('utf-8'))
+  f.flush()
+  if not is_valid(f.name):
+    raise Exception("SRT could not be converted to a valid subtitle file.")
+
   with vtt_open(output_f, 'w') as o:
     o.write(contents.encode('utf-8'))
 
-'''
-  Takes the time codes in the input file and adds (or removes) the offset in
-  seconds from each cue, writing to the output file.
-
-  Example:
-    # add ten seconds to each cue of a Mr. Rogers subtitle file
-    shift_time("Mr. Rogers S3E5.vtt", "Mr. Rogers S3E5.fixed.vtt", 10)
-
-    # subtract 1 hour from each cue of a subtitle file
-    shift_time("QVC_greatest_hits.vtt", "qvc_fixed.vtt", -3600)
-    
-    # using file objects
-    shift_time(open('bad.vtt','r'), open('good.vtt','w'), 42)
-'''
 def shift_time(input_f, output_f, offset_secs):
+  """
+    Takes the time codes in the input file and adds (or removes) the offset in
+    seconds from each cue, writing to the output file.
+
+    Example:
+      # add ten seconds to each cue of a Mr. Rogers subtitle file
+      shift_time("Mr. Rogers S3E5.vtt", "Mr. Rogers S3E5.fixed.vtt", 10)
+
+      # subtract 1 hour from each cue of a subtitle file
+      shift_time("QVC_greatest_hits.vtt", "qvc_fixed.vtt", -3600)
+      
+      # using file objects
+      shift_time(open('bad.vtt','r'), open('good.vtt','w'), 42)
+  """
   import re
   from datetime import datetime, timedelta
     
