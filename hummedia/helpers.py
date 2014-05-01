@@ -81,8 +81,11 @@ class Resource():
     def patch(self,id):
         self.bundle=self.model.find_one({'_id': str(id)})
         if self.acl_write_check(self.bundle):
-            self.set_attrs()
-            return self.save_bundle()
+            setattrs=self.set_attrs()
+	    if setattrs.get("resp")==200:
+		return self.save_bundle()
+	    else:
+		return bundle_400(setattrs.get("msg"))    
         else:
             return action_401()
 
@@ -91,8 +94,11 @@ class Resource():
             self.bundle=self.model()
             self.bundle["_id"]=str(ObjectId(id))
             self.preprocess_bundle()
-            self.set_attrs()
-            return self.save_bundle()
+            setattrs=self.set_attrs()
+	    if setattrs.get("resp")==200:
+		return self.save_bundle()
+	    else:
+		return bundle_400(setattrs.get("msg"))    
         else:
             return action_401()
 
@@ -204,6 +210,7 @@ class Resource():
                         self.bundle[k].append(i)  
                 else: 
                     self.bundle[k]=v
+	return ({"resp":200})
 
     def preprocess_bundle(self):
         pass

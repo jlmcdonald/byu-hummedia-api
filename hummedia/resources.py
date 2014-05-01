@@ -85,8 +85,11 @@ class UserProfile(Resource):
             else:
                 self.bundle["_id"]=str(ObjectId(pid))
             self.preprocess_bundle()
-            self.set_attrs()
-            return self.save_bundle()
+            setattrs=self.set_attrs()
+            if setattrs.get("resp")==200:
+                return self.save_bundle()
+            else:
+                return bundle_400(setattrs.get("msg"))
         else:
             return action_401()
     
@@ -256,13 +259,12 @@ class MediaAsset(Resource):
                        name = request.form.get('name'),
                        lang = request.form.get('lang'))
             except:
-                bundle_400("Invalid subtitle uploaded.")
-                return
+                return ({"resp":400,"msg":"Invalid subtitle uploaded."})
 
             self.bundle["@graph"]["ma:hasRelatedResource"].append(subs)
 
         if self.request.json is None:
-            return
+            return ({"resp":400,"msg":"Invalid Object."})
 
         if "type" in self.request.json:
             self.bundle["@graph"]["dc:type"]="hummedia:type/"+self.request.json["type"]
@@ -337,7 +339,7 @@ class MediaAsset(Resource):
                             loc["ma:hasCompression"]={"@id":"http://www.freebase.com/m/0c02yk5","name":"vp8.0"}
 			if loc not in self.bundle["@graph"]["ma:locator"]:
 	                        self.bundle["@graph"]["ma:locator"].append(loc)
-    
+    	return ({"resp":200})
 
     def make_vtt(self, subs, name='Default', lang='en'):
         '''
@@ -596,6 +598,7 @@ class AssetGroup(Resource):
                         self.bundle["@graph"][k].append(i)  
                 else:
                     self.bundle["@graph"][k]=v
+	return ({"resp":200})
 
     def delete_associated(self,id):
         d=assets.update({"@graph.ma:isMemberOf.@id":str(id)},{'$pull': {"@graph.ma:isMemberOf":{"@id":str(id)}}},multi=True)
@@ -720,3 +723,4 @@ class Annotation(Resource):
 		assets.update({"_id":self.bundle["@graph"]["dc:relation"],"@graph.ma:isMemberOf.@id":self.request.args["collection"]},{"$set":{"@graph.ma:isMemberOf.$.restrictor":self.bundle["_id"]}})
             else:
 		assets.update({"_id":self.bundle["@graph"]["dc:relation"]},{"$addToSet":{"@graph.ma:hasPolicy":self.bundle["_id"]}})
+	return ({"resp":200})
