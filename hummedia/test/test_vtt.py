@@ -92,6 +92,21 @@ def test_upload_vtt(ASSETS, ACCOUNTS, app):
   orig = open(ASSETS + 'subs.vtt', 'r')
   assert orig.read() == file.read()
 
+def test_upload_invalid_vtt(ASSETS, ACCOUNTS, app):
+  app.login(ACCOUNTS['SUPERUSER'])
+  response = None
+
+  with open(ASSETS + 'invalid.vtt') as f:
+    data = {
+        'subtitle': (f, 'subs.vtt'),
+        'name': "The One True Subtitle",
+        'lang': 'en'
+    }
+    response = app.post('/video', data=data)
+
+  assert response.status_code == 400
+    
+
 def test_upload_multi_period_vtt(ASSETS, ACCOUNTS, app):
   app.login(ACCOUNTS["SUPERUSER"])
   response = None
