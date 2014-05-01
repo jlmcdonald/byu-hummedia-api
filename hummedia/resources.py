@@ -264,7 +264,7 @@ class MediaAsset(Resource):
             self.bundle["@graph"]["ma:hasRelatedResource"].append(subs)
 
         if self.request.json is None:
-            return ({"resp":400,"msg":"Invalid Object."})
+	    return ({"resp":200})
 
         if "type" in self.request.json:
             self.bundle["@graph"]["dc:type"]="hummedia:type/"+self.request.json["type"]
