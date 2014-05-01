@@ -25,6 +25,9 @@ def vtt_open(path_or_file, mode):
   if file_to_close:
     file_to_close.close()
 
+class StupidError(Exception):
+  pass
+
 def is_valid(f):
   """ Returns a boolean representing whether or not the given file is valid
   File can either be a string representing the path, or a FileStorage object
@@ -32,16 +35,14 @@ def is_valid(f):
   import tempfile
   
   if hasattr(f, 'save'): # for werkzeug.datastructures.FileStorage objects
-    t = tempfile.NamedTemporaryFile() # TODO: pipe contents directly to cmd
-    path = t.name
-    contents = f.read()
-    t.write(contents)
-    t.flush()
-    f.seek(0)
+    with tempfile.NamedTemporaryFile() as t: # TODO: pipe contents directly to cmd
+      contents = f.read()
+      t.write(contents)
+      t.flush()
+      f.seek(0)
+      return os.system(VALIDATION_BIN + ' ' + t.name) == 0
   else:
-    path = f
-
-  return os.system(VALIDATION_BIN + ' ' + path) == 0
+    return os.system(VALIDATION_BIN + ' ' + f) == 0
 
 def from_srt(input_f, output_f):
   """
