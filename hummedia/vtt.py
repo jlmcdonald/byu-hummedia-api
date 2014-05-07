@@ -25,9 +25,6 @@ def vtt_open(path_or_file, mode):
   if file_to_close:
     file_to_close.close()
 
-class StupidError(Exception):
-  pass
-
 def is_valid(f):
   """ Returns a boolean representing whether or not the given file is valid
   File can either be a string representing the path, or a FileStorage object
