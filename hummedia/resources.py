@@ -10,6 +10,7 @@ import clients, config, json, re, hashlib, time
 from hummedia import app
 from os import system, chmod, chdir, getcwd, listdir, path
 from gearman import GearmanClient
+import vtt
 
 db=connection[config.MONGODB_DB]
 ags=db.assetgroups
@@ -258,8 +259,8 @@ class MediaAsset(Resource):
                 subs = self.make_vtt(request.files['subtitle'],
                        name = request.form.get('name'),
                        lang = request.form.get('lang'))
-            except:
-                return ({"resp":400,"msg":"Invalid subtitle uploaded."})
+            except vtt.SubtitleException as e:
+                return ({"resp":400,"msg":"Invalid subtitle uploaded: {0}".format(e)})
 
             self.bundle["@graph"]["ma:hasRelatedResource"].append(subs)
 
@@ -347,7 +348,6 @@ class MediaAsset(Resource):
         Returns a dictionary with information about the VTT
         '''
 
-        import vtt
         import os
         import uuid
         from werkzeug.utils import secure_filename
@@ -365,10 +365,10 @@ class MediaAsset(Resource):
             vtt.from_srt(subs, output)
         elif ext == 'vtt':
             if not vtt.is_valid(subs):
-                raise Exception("Invalid VTT file")
+                raise vtt.SubtitleException("Invalid VTT file")
             subs.save(output)
         else:
-            raise Exception("Extension must be .vtt or .srt. Given file: "\
+            raise vtt.SubtitleException("Extension must be .vtt or .srt. Given file: "\
                 + filename + "\nExtension: " + ext)
 
         return {

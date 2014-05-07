@@ -7,6 +7,10 @@ import os
 VALIDATION_BIN = 'node ' + os.path.dirname(os.path.realpath(__file__)) +\
                  os.sep + 'validate-vtt.js'
 
+class SubtitleException(Exception):
+  """ Raised when there are errors with subtitles """
+  pass
+
 @contextlib.contextmanager
 def vtt_open(path_or_file, mode):
   """
@@ -79,7 +83,7 @@ def from_srt(input_f, output_f):
   f.write(contents.encode('utf-8'))
   f.flush()
   if not is_valid(f.name):
-    raise Exception("SRT could not be converted to a valid subtitle file.")
+    raise SubtitleException("SRT could not be converted to a valid subtitle file.")
 
   with vtt_open(output_f, 'w') as o:
     o.write(contents.encode('utf-8'))
