@@ -43,7 +43,7 @@ class OAuthProvider():
     def get_remote_app(self):
         return self.remote_app
 
-class Resource():
+class Resource(object):
     collection=connection.test.test
     model=collection.TestObject
     namespace="hummedia:id/object"
@@ -105,7 +105,7 @@ class Resource():
     def put(self,id):
         return self.post(id)
             
-    def get(self,id):
+    def get(self,id,limit=0):
         q=self.set_query()
         if id:
             try:
@@ -125,7 +125,7 @@ class Resource():
             else:
                 return bundle_404()
         else:
-            self.bundle=self.collection.find(q)
+            self.bundle=self.collection.find(q).limit(limit)
             return self.get_list()
 
     def delete(self,id):
