@@ -45,11 +45,7 @@ def get_profile():
     return atts
     
 def get_redirect_url():
-    r = session.get("redirect") if session.get("redirect") else url_for("profile")
-    url_parts = list(urlparse.urlparse(r))
-    query = urlparse.parse_qs(url_parts[4])
-    url_parts[4] = urllib.urlencode(query)
-    return urlparse.urlunparse(url_parts)
+    return session.get("redirect") if session.get("redirect") else url_for("profile")
   
 def set_session_vars(user):
     for att in ('username','userid','role','superuser','fullname','preferredLanguage','ta'):

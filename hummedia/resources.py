@@ -24,7 +24,7 @@ class UserProfile(Resource):
     namespace="hummedia:id/user"
     endpoint="account"
 
-    def get(self,id):
+    def get(self,id,limit=0):
         q=self.set_query()
         if id:
             try:
@@ -41,7 +41,7 @@ class UserProfile(Resource):
             else:
                 return bundle_404()
         else:
-            self.bundle=self.collection.find(q)
+            self.bundle=self.collection.find(q).limit(limit)
             return self.get_list()
 
     def auth_filter(self,bundle=None):
@@ -111,6 +111,7 @@ class MediaAsset(Resource):
     namespace="hummedia:id/video"
     endpoint="video"
     override_only_triggers=['enrollment']
+    max_search_results = 20
     
     def set_disallowed_atts(self):
         self.disallowed_atts=["dc:identifier","pid","dc:type","url"]
@@ -118,6 +119,12 @@ class MediaAsset(Resource):
         atts=get_profile()
         if not atts['superuser']:
             self.disallowed_atts.append("dc:creator")
+
+    def get(self,id,limit=0):
+        if self.request.args.get("q", None) is not None:
+            if limit is 0:
+                return super(MediaAsset, self).get(id, self.max_search_results)
+        return super(MediaAsset, self).get(id, limit)
     
     def set_query(self):
         q={}

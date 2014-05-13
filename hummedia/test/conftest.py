@@ -12,7 +12,7 @@ def ACCOUNTS():
   Account data that can be passed into app.login().
   Contains session information.
   '''
-  return {'SUPERUSER': {'superuser': True}}
+  return {'SUPERUSER': {'superuser': True, 'username': 'arbitraryname'}}
 
 @pytest.fixture
 def ASSETS():
@@ -27,12 +27,6 @@ def app():
   '''
   returns a test client for hummedia
   '''
-  hummedia.app.config.update(
-      SESSION_COOKIE_DOMAIN = None,
-      TESTING = True
-  )
-  config.SUBTITLE_DIRECTORY = tempfile.mkdtemp('hummedia') + os.sep
-
   client = hummedia.app.test_client()
 
   def login(self, account):
@@ -47,3 +41,12 @@ def raise_(ex):
   Helpful when monkeypatching methods that should return specific exeptions
   '''
   raise ex
+
+@pytest.fixture(autouse=True)
+def configure():
+  hummedia.app.config.update(
+      SESSION_COOKIE_DOMAIN = None,
+      MONGODB_DB = 'AUTOMATED_TESTS',
+      TESTING = True
+  )
+  config.SUBTITLE_DIRECTORY = tempfile.mkdtemp('hummedia') + os.sep
