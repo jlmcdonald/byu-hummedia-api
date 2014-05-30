@@ -255,7 +255,7 @@ class MediaAsset(Resource):
             annot["title"]=coll["@graph"]["dc:title"]
             try:
                 details=annotations.find_one({"_id":annot["restrictor"]})
-                annot["transcript"]=details['@graph']['vcp:playSettings']['vcp:showTranscript']
+                annot["transcript"]=bool(details['@graph']['vcp:playSettings']['vcp:showTranscript'])
             except (KeyError, TypeError):
                 annot["transcript"] = False
 
@@ -564,7 +564,7 @@ class AssetGroup(Resource):
                     
                     annot=annotations.find_one({"@graph.dc:relation":vid['@graph']['pid'], '@graph.collection': payload['_id']})
                     try:
-                        vid['@graph']['transcript']=annot['@graph']['vcp:playSettings']['vcp:showTranscript']
+                        vid['@graph']['transcript']=bool(annot['@graph']['vcp:playSettings']['vcp:showTranscript'])
                     except (TypeError, KeyError):
                         vid['@graph']['transcript']=False
 
