@@ -78,6 +78,7 @@ class AnnotationList(Document):
         "@graph.dc:coverage":"public",
         "@graph.dc:date":datetime.datetime.utcnow(),
         "@graph.vcp:playSettings": {
+            "vcp:showTranscript": False,
             "vcp:audioOffset":0,
             "vcp:videoOffset":0,
             "vcp:videoCrop":0,
