@@ -253,6 +253,12 @@ class MediaAsset(Resource):
         for annot in payload["@graph"]["ma:isMemberOf"]:
             coll=ags.find_one({"_id":annot["@id"]})
             annot["title"]=coll["@graph"]["dc:title"]
+            try:
+                details=annotations.find_one({"_id":annot["restrictor"]})
+                annot["transcript"]=bool(details['@graph']['vcp:playSettings']['vcp:showTranscript'])
+            except (KeyError, TypeError):
+                annot["transcript"] = False
+
 	try:
             for track in payload["@graph"]["ma:hasRelatedResource"]:
             	track["@id"]=uri_pattern(track["@id"],config.HOST+"/text")
@@ -555,6 +561,13 @@ class AssetGroup(Resource):
                     vid["@graph"]["type"]=resolve_type(vid["@graph"]["dc:type"])
                     vid["@graph"]["resource"]=resource
                     vid["@graph"]["ma:image"]=[]
+                    
+                    annot=annotations.find_one({"@graph.dc:relation":vid['@graph']['pid'], '@graph.collection': payload['_id']})
+                    try:
+                        vid['@graph']['transcript']=bool(annot['@graph']['vcp:playSettings']['vcp:showTranscript'])
+                    except (TypeError, KeyError):
+                        vid['@graph']['transcript']=False
+
                     if vid["@graph"]["type"]=="humvideo":
                         needs_ext=True
                     elif vid["@graph"]["type"]=="yt":
