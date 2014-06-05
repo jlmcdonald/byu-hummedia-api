@@ -10,6 +10,12 @@ def test_from_srt(ASSETS):
   compare = open(ASSETS + 'subs.vtt', 'r')
   assert f.getvalue() == compare.read()
 
+def test_from_srt_bom(ASSETS):
+  f = io.BytesIO()
+  vtt.from_srt(ASSETS + 'subs-bom.srt', f)
+  compare = open(ASSETS + 'subs.vtt', 'r')
+  assert f.getvalue() == compare.read()
+
 def test_from_srt_file(ASSETS):
   i = open(ASSETS + 'subs.srt')
   o = io.BytesIO()
