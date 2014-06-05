@@ -67,6 +67,7 @@ def from_srt(input_f, output_f):
   
   # strip carriage returns for consistency's sake
   contents = re.sub("\r\n","\n",contents)
+  contents = re.sub(u'\ufeff','',contents) # remove BOM
 
   # remove cue numbering
   regex = re.compile('\d+(?=' + timestamp + ')', re.MULTILINE)

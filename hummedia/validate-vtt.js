@@ -1,12 +1,14 @@
 #!/usr/bin/nodejs
-// taken from https://github.com/annevk/webvtt
-// Not intended to be fast, but if you can make it faster, please help out!
+/** taken from https://github.com/annevk/webvtt, which was placed into the Public Domain
+ *  see https://raw.githubusercontent.com/annevk/webvtt/2202335bc6138ad27d0d7fd0f61f17598e515b49/parser.js for original
+ *  
+ * I've left out the WebVTTSerializer and added NodeJS functionality; everything else should be the same.
+ **/
 
 
 var WebVTTParser = function() {
   this.parse = function(input, mode) {
     //XXX need global search and replace for \0
-    //XXX skyp byte order mark
     var NEWLINE = /\r\n|\r|\n/,
         startTime = Date.now(),
         linePos = 0,
@@ -18,13 +20,24 @@ var WebVTTParser = function() {
       errors.push({message:message, line:linePos+1, col:col})
     }
 
+    var line = lines[linePos],
+        lineLength = line.length,
+        signature = "WEBVTT",
+        bom = 0,
+        signature_length = signature.length
+
+    /* Byte order mark */
+    if (line[0] === "\ufeff") {
+      bom = 1
+      signature_length += 1
+    }
     /* SIGNATURE */
-    if(
-      lines[linePos].length < 6 ||
-      lines[linePos].indexOf("WEBVTT") != 0 ||
-      lines[linePos].length > 6 &&
-        lines[linePos][6] != " " &&
-        lines[linePos][6] != "\t"
+    if (
+      lineLength < signature_length ||
+      line.indexOf(signature) !== 0+bom ||
+      lineLength > signature_length &&
+      line[signature_length] !== " " &&
+      line[signature_length] !== "\t"
     ) {
       err("No valid signature. (File needs to start with \"WEBVTT\".)")
     }
