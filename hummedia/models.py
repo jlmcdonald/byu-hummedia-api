@@ -222,6 +222,7 @@ class Video(Document):
         from config import HOST
         resource=uri_pattern(vid.get("pid"),host+"/video")
         thepart={"ma:title":vid["ma:title"],"pid":vid.get("pid"),"resource":resource}
+        thepart['type'] = resolve_type(vid['dc:type'])
         if part!="snippet":
             thepart["fromYt"]=[]
             thepart["ma:image"]=[]
@@ -232,6 +233,8 @@ class Video(Document):
                     poster=uri_pattern(location["@id"]+".jpg",HOST+"/posters")
                     thumb=uri_pattern(location["@id"]+"_thumb.jpg",HOST+"/posters")
                     thepart["ma:image"].append({"poster":poster,"thumb":thumb})
+                elif resolve_type(vid['dc:type'])=='humaudio':
+                    pass
                 else:
                     thepart["ma:image"].append({"ytId":location["@id"]})
                     thepart["fromYt"].append(location["@id"])
