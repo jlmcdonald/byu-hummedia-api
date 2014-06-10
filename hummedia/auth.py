@@ -85,20 +85,25 @@ def get_user_from_cas(netid=None,atts=None):
     user=connection.User.find_one(q)
     if user is None:
         user=connection.User()
-        faculty_positions=["activeFulltimeInstructor","activeParttimeInstructor"]
-        user["username"]=netid.lower()
-        user["firstname"]=unicode(atts["preferredFirstName"])
-        user["lastname"]=unicode(atts["preferredSurname"])
-        user["email"]=atts["emailAddress"]
-        user["fullname"]="%s %s" % (user["firstname"],user["lastname"])
-        user["userid"]=str(atts["personId"])
-        for ap in faculty_positions:
-            if atts[ap]=="true":
-                user["role"]="faculty"
+
+    user["username"]=netid.lower()
+    user["firstname"]=unicode(atts["preferredFirstName"])
+    user["lastname"]=unicode(atts["preferredSurname"])
+    user["email"]=atts["emailAddress"]
+    user["fullname"]="%s %s" % (user["firstname"],user["lastname"])
+    user["userid"]=str(atts["personId"])
+    user["role"]="student"
+
+    faculty_positions=["activeFulltimeInstructor","activeParttimeInstructor"]
+    for ap in faculty_positions:
+        if atts[ap]=="true":
+            user["role"]="faculty"
+
     oauth=session.get('oauth',[])
     if "provider" in oauth:
         if user['oauth'][oauth['provider']]['id'] is None:
             user["oauth"][oauth['provider']]={"id":oauth['id'],"email": oauth['email'],"access_token":oauth['access_token']}
+
     user.save()
     set_session_vars(user)
     return {"user":get_user()}
