@@ -12,7 +12,11 @@ def ACCOUNTS():
   Account data that can be passed into app.login().
   Contains session information.
   '''
-  return {'SUPERUSER': {'superuser': True, 'username': 'arbitraryname'}}
+  return {
+   'SUPERUSER': {'superuser': True, 'username': 'arbitraryname'},
+   'STUDENT': {'superuser': False, 'username': 'miss_havisham', 'role': 'student'},
+   'FACULTY': {'superuser': False, 'username': 'john_psota', 'role': 'faculty'}
+  }
 
 @pytest.fixture
 def ASSETS():
@@ -49,4 +53,5 @@ def configure():
       MONGODB_DB = 'AUTOMATED_TESTS',
       TESTING = True
   )
-  config.SUBTITLE_DIRECTORY = tempfile.mkdtemp('hummedia') + os.sep
+  config.SUBTITLE_DIRECTORY = tempfile.mkdtemp('hummedia-subs') + os.sep
+  config.MEDIA_DIRECTORY = tempfile.mkdtemp('hummedia-audio') + os.sep

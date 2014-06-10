@@ -217,6 +217,9 @@ class MediaAsset(Resource):
         if payload["@graph"]["type"]=="humvideo":
             prefix=config.HOST + '/'
             needs_ext=True
+        elif payload['@graph']['type']=='humaudio':
+            prefix=config.HOST + '/'
+            needs_ext=True
         elif payload["@graph"]["type"]=="yt":
             prefix="http://youtu.be"
             needs_ext=False
@@ -442,6 +445,64 @@ class MediaAsset(Resource):
         remove(config.SUBTITLE_DIRECTORY + filename)
 
         return mongo_jsonify(bundle)
+
+@app.route('/batch/audio/ingest',methods=['POST'])
+def audioCreationBatch():
+    import mutagen
+    import uuid
+    import os
+    from werkzeug.utils import secure_filename
+    from auth import is_superuser
+
+    if not is_superuser():
+      return action_401()
+
+    files = request.files.getlist('audio[]')
+    
+    if not len(files):
+      return bundle_400("Missing form field 'audio[]'")
+
+    incompatible = filter(lambda x: not x.filename.endswith('mp3'), files)
+    
+    if len(incompatible):
+      return bundle_400("Only MP3 files are supported.")
+
+    results = []
+    for f in files:
+        ext = f.filename.split('.')[-1]
+        filename = secure_filename(f.filename.split('.', 1)[0]) \
+                   + str(uuid.uuid4()) + '.' + ext
+
+        path = os.path.join(config.MEDIA_DIRECTORY, filename)
+        f.save(path)
+
+        id3 = mutagen.File(path, easy=True) # metadata
+        _id = str(ObjectId())
+
+        audio = assets.Video()
+        audio['_id'] = _id
+        audio['@graph']['dc:type'] = 'hummedia:type/humaudio'
+        audio['@graph']['pid'] = _id
+        audio['@graph']['ma:title'] = id3.get('title',[None])[0]
+        audio['@graph']['ma:hasContributor'] = [{'@id': '', 'name': x} for x in id3.get('artist')]
+
+        try:
+            audio['@graph']["ma:date"] = int(id3.get('date')[0])
+        except:
+            audio['@graph']['ma:date'] = 1970 # TODO: this requires a number, but I don't have one for it
+
+        audio['@graph']["ma:locator"] = [
+             {
+                 "@id": '.'.join(filename.split('.')[0:-1]),
+                 "ma:hasFormat": "audio/" + ext,
+                 "ma:hasCompression": {}
+             }
+        ]
+        audio.save()
+        audio['@graph']['ma:locator'][0]['@id'] += '.mp3'
+        results.append(audio['@graph'])
+
+    return mongo_jsonify(results)
 
 @app.route('/batch/video/ingest',methods=['GET','POST'])
 def videoCreationBatch():

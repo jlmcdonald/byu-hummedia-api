@@ -5,3 +5,4 @@ byu_ws_sdk
 lxml
 gearman
 chardet
+mutagen
