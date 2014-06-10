@@ -483,8 +483,8 @@ def audioCreationBatch():
         audio['_id'] = _id
         audio['@graph']['dc:type'] = 'hummedia:type/humaudio'
         audio['@graph']['pid'] = _id
-        audio['@graph']['ma:title'] = id3.get('title',[None])[0]
-        audio['@graph']['ma:hasContributor'] = [{'@id': '', 'name': x} for x in id3.get('artist')]
+        audio['@graph']['ma:title'] = id3.get('title',[f.filename])[0]
+        audio['@graph']['ma:hasContributor'] = [{'@id': '', 'name': x} for x in id3.get('artist',[])]
 
         try:
             audio['@graph']["ma:date"] = int(id3.get('date')[0])

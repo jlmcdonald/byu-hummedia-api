@@ -36,6 +36,16 @@ def test_upload_mp3_without_date_id3(ASSETS, ACCOUNTS, app):
   
   assert response.status_code == 200
 
+def test_upload_mp3_without_any_id3(ASSETS, ACCOUNTS, app):
+  app.login(ACCOUNTS["SUPERUSER"])
+  with open(ASSETS + 'stapler-tagless.mp3') as f:
+    data = {
+        'audio[]': [(f, 'audio.mp3')]
+    }
+    response = app.post('/batch/audio/ingest', data=data)
+
+  assert response.status_code == 200
+
 def test_upload_mp3(ASSETS, ACCOUNTS, app):
   app.login(ACCOUNTS["SUPERUSER"])
   upload_single_file_and_assert(app, ASSETS + 'coin.mp3')
