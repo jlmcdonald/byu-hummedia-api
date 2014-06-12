@@ -189,7 +189,7 @@ class MediaAsset(Resource):
             return True
         for c in obj["@graph"]["ma:isMemberOf"]:
             coll=ags.find_one({"_id":c["@id"]})
-            if coll["@graph"].get("dc:creator")==atts['username'] or atts['username'] in coll['@graph']["dc:rights"]["read"]:
+            if coll["@graph"].get("dc:creator")==atts['username'] or atts['username'] in coll['@graph']["dc:rights"]["read"] or coll['@graph']['dc:coverage'] == 'public':
                 return True
             if is_enrolled(coll):
                 return True
@@ -613,7 +613,7 @@ class AssetGroup(Resource):
         if payload:
             v=assets.find({"@graph.ma:isMemberOf.@id":payload["_id"]})
             payload["@graph"]["videos"]=[]
-            if not is_enrolled(payload):
+            if not is_enrolled(payload) and not (payload['@graph']['dc:coverage'] == 'public'):
                 v=self.auth_filter(v)
             thumbRetriever=[]
             for vid in v:
