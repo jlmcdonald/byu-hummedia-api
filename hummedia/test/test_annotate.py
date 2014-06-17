@@ -14,8 +14,7 @@ def test_required_annotation_audio(app, ACCOUNTS, ASSETS):
   vid = data[0]['pid']
 
   headers = [('Content-Type', 'application/json')]
-  print vid
-  data = {"media":[{"id":vid,"name":"Media0","target":"hum-video","tracks":[{"name":"Layer 0","id":"0","trackEvents":[{"id":"TrackEvent0","type":"mutePlugin","popcornOptions":{"start":0,"end":2.53663,"target":"target-4","__humrequired":True,"id":"TrackEvent0"},"track":"0","name":"TrackEvent0"}]}],"clipData":{}}]}
+  data = {"media":[{"id":vid,"name":"Media0","target":"hum-video","tracks":[{"name":"Layer 0","id":"0","trackEvents":[{"id":"TrackEvent0","type":"mutePlugin","popcornOptions":{"start":0,"end":2.53663,"target":"target-0","__humrequired":True,"id":"TrackEvent0"},"track":"0","name":"TrackEvent0"}]}],"clipData":{}}]}
   response = app.post('/annotation?client=popcorn',
                       data=json.dumps(data),
                       headers={'Content-Type': 'application/json'})
