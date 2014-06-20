@@ -748,6 +748,9 @@ class Annotation(Resource):
             if m["@graph"]["type"]=="humvideo":
                 host=config.HOST+"/video"
                 ext="."+url["ma:hasFormat"].replace("video/","")
+            elif m["@graph"]["type"]=="humaudio":
+                host=config.HOST+"/video"
+                ext="."+url["ma:hasFormat"].replace("audio/","")
             elif m["@graph"]["type"]=="yt":
                 host="http://youtu.be"
                 ext=""
