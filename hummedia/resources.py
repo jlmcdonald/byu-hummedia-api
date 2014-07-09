@@ -789,6 +789,8 @@ class Annotation(Resource):
             if k=="dc:title":
                 self.bundle["@graph"]["dc:title"]=unicode(v)
             elif k=="vcp:playSettings" and v:
+                if self.bundle["@graph"]["vcp:playSettings"] is None:
+                    self.bundle["@graph"]["vcp:playSettings"] = {}
                 for (i,j) in v.items():
                     if i=="vcp:frameRate":
                         self.bundle["@graph"]["vcp:playSettings"][i]=float(j)
