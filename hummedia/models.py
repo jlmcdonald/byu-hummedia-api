@@ -242,5 +242,6 @@ class Video(Document):
                 thepart[att]=vid.get(att)
             for annot in thepart["ma:isMemberOf"]:
                 coll=connection[MONGODB_DB].assetgroups.find_one({"_id":annot["@id"]})
-                annot["title"]=coll["@graph"]["dc:title"]
+		if coll is not None:
+	            annot["title"]=coll["@graph"]["dc:title"]
         return thepart
