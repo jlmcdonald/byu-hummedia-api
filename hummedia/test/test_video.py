@@ -57,8 +57,7 @@ def test_patch_video_without_good_date(app, ACCOUNTS):
   pid = response['pid']
   patch = {
     'ma:title': 'Ghostbusters',
-    'ma:date': '',
-    'pid': pid
+    'ma:date': ''
   } 
 
   result = app.patch('/video/' + pid, data=json.dumps(patch), content_type='application/json')
