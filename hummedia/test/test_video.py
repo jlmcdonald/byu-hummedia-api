@@ -40,3 +40,30 @@ def test_limit_search(app, ACCOUNTS, monkeypatch):
   response = app.get('/video?q=' + title)
   data = json.loads(response.data)
   assert len(data) == MediaAsset.max_search_results
+
+def test_patch_video_without_good_date(app, ACCOUNTS):
+  from ..resources import MediaAsset
+
+  app.login(ACCOUNTS['SUPERUSER'])
+
+  # TODO: use a mock database so we don't have to wipe it
+  MediaAsset.collection.database.drop_collection('assets')
+  MediaAsset.collection.database.create_collection('assets')
+
+  title = "thing"
+  mock_data = {"ma:title":title,"dc:coverage":"private","ma:hasLanguage":["en"],"ma:description":"","ma:date":"2014","url":["http://youtu.be/h2tfjG4tzWY"],"type":"yt"}
+  posted = app.post('/video', data=json.dumps(mock_data), content_type='application/json')
+  response = json.loads(posted.data)
+  pid = response['pid']
+  patch = {
+    'ma:title': 'Ghostbusters',
+    'ma:date': '',
+    'pid': pid
+  } 
+
+  result = app.patch('/video/' + pid, data=json.dumps(patch), content_type='application/json')
+
+  assert result.status_code is 200
+  
+  result_data = json.loads(result.data)
+  assert result_data['ma:title'] == patch['ma:title']
