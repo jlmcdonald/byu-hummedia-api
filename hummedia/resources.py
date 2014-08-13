@@ -189,8 +189,11 @@ class MediaAsset(Resource):
             return True
         for c in obj["@graph"]["ma:isMemberOf"]:
             coll=ags.find_one({"_id":c["@id"]})
-            if coll["@graph"].get("dc:creator")==atts['username'] or atts['username'] in coll['@graph']["dc:rights"]["read"] or coll['@graph']['dc:coverage'] == 'public':
-                return True
+            try:
+                if coll["@graph"].get("dc:creator")==atts['username'] or atts['username'] in coll['@graph']["dc:rights"]["read"] or coll['@graph']['dc:coverage'] == 'public':
+                    return True
+            except TypeError:
+                   pass
             if is_enrolled(coll):
                 return True
         return False
@@ -201,8 +204,11 @@ class MediaAsset(Resource):
         if atts['superuser'] or (atts['role']=='faculty' and not bundle):
             return True
         if bundle:
-            if bundle["@graph"].get("dc:creator")==atts['username'] or atts['username'] in bundle['@graph']["dc:rights"]["write"]:
-                return True
+            try:
+                if bundle["@graph"].get("dc:creator")==atts['username'] or atts['username'] in bundle['@graph']["dc:rights"]["write"]:
+                    return True
+            except TypeError:
+                   pass
             for coll in bundle["@graph"]["ma:isMemberOf"]:
                 coll=ags.find_one({"_id":coll["@id"]})
                 if coll["@graph"].get("dc:creator")==atts['username'] or atts['username'] in coll['@graph']["dc:rights"]["write"]:
