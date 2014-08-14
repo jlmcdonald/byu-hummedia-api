@@ -301,9 +301,15 @@ class MediaAsset(Resource):
                 elif self.model.structure['@graph'][k]==type(u""):
                     self.bundle["@graph"][k]=unicode(v)
                 elif self.model.structure['@graph'][k]==type(2):
-                    self.bundle["@graph"][k]=int(v) if v is not None else 0
+                    try:
+                        self.bundle["@graph"][k]=int(v)
+                    except ValueError:
+                        self.bundle["@graph"][k]=0
                 elif self.model.structure['@graph'][k]==type(2.0):
-                    self.bundle["@graph"][k]=float(v) if v is not None else 0
+                    try:
+                        self.bundle["@graph"][k]=float(v)
+                    except ValueError:
+                        self.bundle["@graph"][k]=0
                 elif type(self.model.structure['@graph'][k])==type([]):
                     self.bundle["@graph"][k]=[]
                     for i in v:
