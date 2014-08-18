@@ -1,9 +1,9 @@
+import sys
 import pytest
 import os
 import types
 import tempfile
 import hummedia
-from hummedia import config
 from werkzeug.datastructures import Headers
 
 @pytest.fixture
@@ -48,10 +48,18 @@ def raise_(ex):
 
 @pytest.fixture(autouse=True)
 def configure():
+  from hummedia import config
+
+  if config.MONGODB_DB == 'hummedia':
+    import sys
+    print "WARNING: It looks like these tests are being run on a live database.\
+        The test database name cannot be 'hummedia'."
+    sys.exit(1)
+
+  os.system('mongo ' + config.MONGODB_DB + ' --eval "JSON.stringify(db.dropDatabase())"')
+
+  # NOTE: SEE hummedia/__init__.py for other test-specific configuration values
   hummedia.app.config.update(
-      SESSION_COOKIE_DOMAIN = None,
-      MONGODB_DB = 'AUTOMATED_TESTS',
-      TESTING = True
+    SESSION_COOKIE_DOMAIN=None,
+    TESTING=True,
   )
-  config.SUBTITLE_DIRECTORY = tempfile.mkdtemp('hummedia-subs') + os.sep
-  config.MEDIA_DIRECTORY = tempfile.mkdtemp('hummedia-audio') + os.sep
