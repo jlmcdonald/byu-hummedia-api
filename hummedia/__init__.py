@@ -13,7 +13,8 @@ if x.match(sys.argv[0]) is not None:
   patch = {
     'MONGODB_DB': 'hummedia_test',
     'SUBTITLE_DIRECTORY': mkdtemp('hummedia-subs') + sep,
-    'MEDIA_DIRECTORY': mkdtemp('hummedia-audio') + sep
+    'MEDIA_DIRECTORY': mkdtemp('hummedia-audio') + sep,
+    'AUTH_TOKEN_IP': False,
   }
 
   for name in patch:
