@@ -13,4 +13,4 @@ install:
 
 before_script: cp hummedia/config.template.py hummedia/config.py
   
-script: py.test hummedia/test
+script: py.test hummedia/test -l
