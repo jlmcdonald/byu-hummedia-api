@@ -9,8 +9,8 @@ cache:
     - $HOME/.pip-cache
 
 install: 
-  - pip install -r requirements.txt --download-cache $HOME/.pip-cache
+  - pip install -r requirements.txt --no-use-wheel --download-cache $HOME/.pip-cache
 
 before_script: cp hummedia/config.template.py hummedia/config.py
   
-script: py.test hummedia/test
+script: py.test hummedia/test -l
