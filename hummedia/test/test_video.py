@@ -61,12 +61,13 @@ def test_patch_video_25_fps(app, ACCOUNTS):
   from mongokit import Document, Connection
   from hummedia import config
   from hummedia.models import Video, AssetGroup
+  from bson.objectid import ObjectId
   
   connection = Connection(host=config.MONGODB_HOST, port=config.MONGODB_PORT)
   
   video = connection[Video.__database__][Video.__collection__]
   
-  pid = "8675309"
+  pid = str(ObjectId())
   video.insert({ "_id" : pid, "@context" : { "dc:type" : "@type", "hummedia" : "http://humanities.byu.edu/hummedia/", "ma" : "http://www.w3.org/ns/ma-ont/", "dc" : "http://purl.org/dc/elements/1.1/", "dc:identifier" : "@id" }, "@graph" : { "dc:coverage" : "private", "dc:creator" : "testuser", "dc:date" : "2013-08-29", "dc:identifier" : "hummedia:id/video/"+pid, "dc:rights" : { "read" : [ ], "write" : [ ] }, "dc:type" : "hummedia:type/humvideo", "ma:averageBitRate" : 903903, "ma:date" : 1970, "ma:description" : "None", "ma:duration" : 0, "ma:features" : [ ], "ma:frameHeight" : 360, "ma:frameRate" : 25, "ma:frameSizeUnit" : "px", "ma:frameWidth" : 720, "ma:hasContributor" : [ ], "ma:hasGenre" : { "@id" : None, "name" : None }, "ma:hasKeyword" : [  "film",  "German" ], "ma:hasLanguage" : [  "en" ], "ma:hasPolicy" : [ ], "ma:hasRelatedResource" : [ ], "ma:height" : 400, "ma:isCopyrightedBy" : { "@id" : None, "name" : None }, "ma:isMemberOf" : [     {   "@id" : "anothertest",     "title" : "Test Videos" },    {   "@id" : "testid",     "title" : "testtitle" } ], "ma:isRelatedTo" : [ ], "ma:locator" : [  {   "@id" : "tommytutone",  "ma:hasFormat" : "video/mp4",   "ma:hasCompression" : {     "@id" : "http://www.freebase.com/view/en/h_264_mpeg_4_avc",     "name" : "avc.42E01E" } },  {   "@id" : "tommytutone",  "ma:hasFormat" : "video/webm",  "ma:hasCompression" : {     "@id" : "http://www.freebase.com/m/0c02yk5",    "name" : "vp8.0" } } ], "ma:title" : "Test Video", "pid" : pid } })
   
   app.login(ACCOUNTS['SUPERUSER'])
