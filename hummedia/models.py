@@ -162,7 +162,7 @@ class Video(Document):
                 }
             ],
             "ma:frameHeight": int,
-            "ma:frameRate": float,
+            "ma:frameRate": OR(float,int),
             "ma:frameSizeUnit": basestring,
             "ma:frameWidth": int,
             "ma:hasContributor": [

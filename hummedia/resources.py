@@ -298,9 +298,17 @@ class MediaAsset(Resource):
                         self.bundle["@graph"][k].append({"@id":i["@id"],"name":unicode(i[k])})
                 elif k in ["ma:isCopyrightedBy","ma:hasGenre"]:
                     self.bundle["@graph"][k]={"@id":v["@id"],"name":unicode(v["name"]) if v["name"] is not None else v["name"] }
+		elif k=="ma:frameRate":
+			if type(v)==type(2) or type(v)==type(2.0):
+		        	self.bundle["@graph"][k]=v
+			else:
+				try:
+                        		self.bundle["@graph"][k]=float(v)
+                    		except ValueError:
+                        		self.bundle["@graph"][k]=0
                 elif self.model.structure['@graph'][k]==type(u""):
                     self.bundle["@graph"][k]=unicode(v)
-                elif self.model.structure['@graph'][k]==type(2.0) or k=="ma:frameRate":
+                elif self.model.structure['@graph'][k]==type(2.0):
                     try:
                         self.bundle["@graph"][k]=float(v)
                     except ValueError:
