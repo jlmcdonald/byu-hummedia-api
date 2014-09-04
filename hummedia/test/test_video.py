@@ -106,3 +106,22 @@ def test_ingest(app, ACCOUNTS, ASSETS):
   for v in vid['url']:
     filename = v.split('/')[-1]
     assert isfile(config.MEDIA_DIRECTORY + filename)
+
+def test_no_dotfiles(app, ACCOUNTS):
+  from uuid import uuid4
+  import os
+  from hummedia import config
+  app.login(ACCOUNTS['SUPERUSER'])
+
+  dotfile = config.INGEST_DIRECTORY + '.' + str(uuid4())
+  mp4file = config.INGEST_DIRECTORY + str(uuid4()) + '.mp4'
+
+  for filename in (dotfile, mp4file):
+    with open(filename,'a'):
+      os.utime(filename,None)
+
+  ingest = app.get('/batch/video/ingest')
+  data = json.loads(ingest.data)
+
+  assert len(data) is 1
+  assert data[0].find('.mp4') is not -1
