@@ -79,3 +79,30 @@ def test_patch_video_25_fps(app, ACCOUNTS):
 
   data = json.loads(result.data)
   assert data['ma:title'] == patch['ma:title']
+  
+def test_ingest(app, ACCOUNTS, ASSETS):
+  from uuid import uuid4
+  from shutil import copyfile
+  from hummedia import config
+  from time import sleep
+  from os.path import isfile
+  filename = 'fire.mp4'
+
+  app.login(ACCOUNTS['SUPERUSER'])
+  response = app.post('/video')
+  data = json.loads(response.data)
+  pid = data[u'pid']
+  copyfile(ASSETS + filename, config.INGEST_DIRECTORY + filename)
+  up = json.dumps([{"filepath": filename, "pid": pid, "id":  str(uuid4())}])
+  ingest_response = app.post('/batch/video/ingest', data=up, content_type='application/json')
+
+  assert ingest_response.status_code is 200
+
+  vid_response = app.get('/video/' + pid)
+  vid = json.loads(vid_response.data)
+
+  assert len(vid['url']) is 2
+
+  for v in vid['url']:
+    filename = v.split('/')[-1]
+    assert isfile(config.MEDIA_DIRECTORY + filename)
