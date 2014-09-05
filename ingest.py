@@ -1,14 +1,15 @@
 #!/usr/bin/python
 
 import os
-from gearman import GearmanWorker
+from hummedia import app
 from hummedia.config import GEARMAN_SERVERS, MEDIA_DIRECTORY
 
-worker = GearmanWorker(GEARMAN_SERVERS)
-
 # Pass the unique ID of the media to this task to run it (e.g., 1234)
-def generate_webm(gearman_worker, gearman_job):
-    newfile = MEDIA_DIRECTORY + gearman_job.data
+def generate_webm(gearman_worker=None, gearman_job=None, file_id=None):
+    if file_id is not None:
+        newfile = MEDIA_DIRECTORY + file_id
+    else:
+        newfile = MEDIA_DIRECTORY + gearman_job.data
 
     print "TASK RECEIVED FOR %s" % newfile # @TODO timestamp
 
@@ -29,6 +30,10 @@ def generate_webm(gearman_worker, gearman_job):
     print "TASK COMPLETE" # @TODO timestamp
     return "COMPLETE" # @TODO return something more specific to the client
 
-worker.register_task("generate_webm", generate_webm)
 
-worker.work()
+
+if not app.config.get('TESTING'):
+  from gearman import GearmanWorker
+  worker = GearmanWorker(GEARMAN_SERVERS)
+  worker.register_task("generate_webm", generate_webm)
+  worker.work()

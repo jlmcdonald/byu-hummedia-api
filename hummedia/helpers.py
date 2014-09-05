@@ -389,16 +389,22 @@ def getCurrentSem():
 def getVideoInfo(filename):
     from subprocess import check_output
 
-    output  =  check_output(
-        ['avprobe', filename, '-show_streams', '-show_format', '-loglevel', 'quiet'])
+    cmd = ['avprobe', filename, '-show_streams', '-show_format', '-loglevel', 'quiet']
+
+    if check_output('avprobe -version'.split()).find('avprobe 0.8') == -1:
+        cmd += ['-of','old']
+
+    output  =  check_output(cmd)
     
     # ensure that the data we have is that for the video. doesn't include audio data
-    matches = re.search(
-        r'\[STREAM\]\s*(.*?codec_type=video.*?)\s*\[/STREAM\].*\[FORMAT\]\s*(.*)\[/FORMAT\]',
+    stream_match = re.search(
+        r'\[STREAM\]\s*(.*?codec_type=video.*?)\s*\[/STREAM\]',
         output,
         re.DOTALL)
+
+    format_match = re.search(r'\[FORMAT\]\s*(.*)\[/FORMAT\]', output, re.DOTALL)
     
-    lines = matches.group(1).splitlines() + matches.group(2).splitlines()
+    lines = stream_match.group(1).splitlines() + format_match.group(1).splitlines()
     data = {line.split('=')[0].strip(): line.split('=')[1].strip() for line in lines}
     
     framerate = data['avg_frame_rate'].split('/')

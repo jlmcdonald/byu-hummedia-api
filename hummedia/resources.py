@@ -9,7 +9,6 @@ from urlparse import urlparse, parse_qs
 import clients, config, json, re, hashlib, time
 from hummedia import app
 from os import system, chmod, chdir, getcwd, listdir, path
-from gearman import GearmanClient
 import vtt
 
 db=connection[config.MONGODB_DB]
@@ -531,11 +530,7 @@ def videoCreationBatch():
         return action_401()
     if request.method=="GET":
         chdir(config.INGEST_DIRECTORY)
-        files=listdir(getcwd())
-        try:
-            files.remove(".DS_Store")
-        except ValueError:
-            pass
+        files=[f for f in listdir(getcwd()) if f[0] != '.']
         return json.dumps(files)
     else:
         from PIL import Image
@@ -578,8 +573,16 @@ def videoCreationBatch():
                 im.thumbnail((160,90))
                 im.save(thumb)
                 chmod(thumb,0775)
-                client = GearmanClient(config.GEARMAN_SERVERS)
-                client.submit_job("generate_webm", str(up["id"]))
+                
+                if not app.config.get('TESTING'):
+                    from gearman import GearmanClient
+                    client = GearmanClient(config.GEARMAN_SERVERS)
+                    client.submit_job("generate_webm", str(up["id"]))
+                else:
+                    from ingest import generate_webm
+                    result = generate_webm(file_id=up['id'])
+                    if result == "ERROR":
+                      raise Exception("Could not convert media file.")
 	return "Success"
 
 class AssetGroup(Resource):

@@ -48,6 +48,10 @@ def raise_(ex):
 
 @pytest.fixture(autouse=True)
 def configure():
+  '''
+  NOTE: SEE hummedia/__init__.py for other test-specific configuration values
+  '''
+
   from hummedia import config
 
   if config.MONGODB_DB == 'hummedia':
@@ -58,7 +62,6 @@ def configure():
 
   os.system('mongo ' + config.MONGODB_DB + ' --eval "JSON.stringify(db.dropDatabase())"')
 
-  # NOTE: SEE hummedia/__init__.py for other test-specific configuration values
   hummedia.app.config.update(
     SESSION_COOKIE_DOMAIN=None,
     TESTING=True,
