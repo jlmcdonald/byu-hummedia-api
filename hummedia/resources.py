@@ -530,11 +530,7 @@ def videoCreationBatch():
         return action_401()
     if request.method=="GET":
         chdir(config.INGEST_DIRECTORY)
-        files=listdir(getcwd())
-        try:
-            files.remove(".DS_Store")
-        except ValueError:
-            pass
+        files=[f for f in listdir(getcwd()) if f[0] != '.']
         return json.dumps(files)
     else:
         from PIL import Image
