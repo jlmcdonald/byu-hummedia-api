@@ -125,3 +125,27 @@ def test_no_dotfiles(app, ACCOUNTS):
 
   assert len(data) is 1
   assert data[0].find('.mp4') is not -1
+
+def test_delete_video_file(app, ACCOUNTS, ASSETS):
+  from uuid import uuid4
+  from shutil import copyfile
+  from hummedia import config
+  from time import sleep
+  from os.path import isfile
+  filename = 'fire.mp4'
+
+  app.login(ACCOUNTS['SUPERUSER'])
+  response = app.post('/video')
+  data = json.loads(response.data)
+  pid = data[u'pid']
+  copyfile(ASSETS + filename, config.INGEST_DIRECTORY + filename)
+  up = json.dumps([{"filepath": filename, "pid": pid, "id":  str(uuid4())}])
+  ingest_response = app.post('/batch/video/ingest', data=up, content_type='application/json')
+
+  vid_response = app.get('/video/' + pid)
+  vid = json.loads(vid_response.data)
+  filepath = config.MEDIA_DIRECTORY + vid['url'][0].split('/')[-1]
+
+  assert isfile(filepath)
+  app.delete('/video/' + pid)
+  assert not isfile(filepath), "Video was deleted, but file was not"
