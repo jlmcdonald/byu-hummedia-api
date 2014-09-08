@@ -424,6 +424,9 @@ class MediaAsset(Resource):
             else:
                 for location in self.bundle['@graph']['ma:locator']:
                     basename = location['@id']
+                    duplicates = self.model.find_one({"@graph.ma:locator": {"$elemMatch": {"@id": basename}}})
+                    if duplicates is not None:
+                        return result
                     extension = location['ma:hasFormat'].split('/')[-1]
                     filename = "{0}.{1}".format(basename, extension)
                     try:
