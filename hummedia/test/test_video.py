@@ -147,5 +147,6 @@ def test_delete_video_file(app, ACCOUNTS, ASSETS):
   filepath = config.MEDIA_DIRECTORY + vid['url'][0].split('/')[-1]
 
   assert isfile(filepath)
-  app.delete('/video/' + pid)
+  response = app.delete('/video/' + pid)
+  assert response.status_code is 200, "Video document could not be deleted."
   assert not isfile(filepath), "Video was deleted, but file was not"
