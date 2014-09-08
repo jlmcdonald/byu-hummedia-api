@@ -8,7 +8,7 @@ from bson import ObjectId
 from urlparse import urlparse, parse_qs
 import clients, config, json, re, hashlib, time
 from hummedia import app
-from os import system, chmod, chdir, getcwd, listdir, path
+from os import system, chmod, chdir, getcwd, listdir, path, remove
 import vtt
 
 db=connection[config.MONGODB_DB]
@@ -418,7 +418,22 @@ class MediaAsset(Resource):
         atts=get_profile()
         if atts['superuser']:
             self.bundle=self.model.find_one({'_id': str(id)})
-            return self.delete_obj()
+            result = self.delete_obj()
+            if not result:
+                return result
+            else:
+                for location in self.bundle['@graph']['ma:locator']:
+                    basename = location['@id']
+                    duplicates = self.model.find_one({"@graph.ma:locator": {"$elemMatch": {"@id": basename}}})
+                    if duplicates is not None:
+                        return result
+                    extension = location['ma:hasFormat'].split('/')[-1]
+                    filename = "{0}.{1}".format(basename, extension)
+                    try:
+                        remove(config.MEDIA_DIRECTORY + filename)
+                    except IOError:
+                        pass
+                return result
         else:
             return action_401()
     

@@ -84,7 +84,6 @@ def test_ingest(app, ACCOUNTS, ASSETS):
   from uuid import uuid4
   from shutil import copyfile
   from hummedia import config
-  from time import sleep
   from os.path import isfile
   filename = 'fire.mp4'
 
@@ -125,3 +124,57 @@ def test_no_dotfiles(app, ACCOUNTS):
 
   assert len(data) is 1
   assert data[0].find('.mp4') is not -1
+
+def test_delete_video_file(app, ACCOUNTS, ASSETS):
+  from uuid import uuid4
+  from shutil import copyfile
+  from hummedia import config
+  from os.path import isfile
+  filename = 'fire.mp4'
+
+  app.login(ACCOUNTS['SUPERUSER'])
+  response = app.post('/video')
+  data = json.loads(response.data)
+  pid = data[u'pid']
+  copyfile(ASSETS + filename, config.INGEST_DIRECTORY + filename)
+  up = json.dumps([{"filepath": filename, "pid": pid, "id":  str(uuid4())}])
+  ingest_response = app.post('/batch/video/ingest', data=up, content_type='application/json')
+
+  vid_response = app.get('/video/' + pid)
+  vid = json.loads(vid_response.data)
+  filepath = config.MEDIA_DIRECTORY + vid['url'][0].split('/')[-1]
+
+  assert isfile(filepath)
+  response = app.delete('/video/' + pid)
+  assert response.status_code is 200, "Video document could not be deleted."
+  assert not isfile(filepath), "Video was deleted, but file was not"
+
+def test_delete_video_duplicate_documents_one_file(app, ACCOUNTS, ASSETS):
+  from uuid import uuid4
+  from shutil import copyfile
+  from os.path import isfile
+  from bson.objectid import ObjectId
+  from mongokit import Document, Connection
+  from hummedia import config
+  from hummedia.models import Video, AssetGroup
+  from bson.objectid import ObjectId
+  
+  connection = Connection(host=config.MONGODB_HOST, port=config.MONGODB_PORT)
+  video = connection[Video.__database__][Video.__collection__]
+  
+  pid = str(ObjectId())
+  filename = str(ObjectId())
+  filepath = config.MEDIA_DIRECTORY + filename + '.mp4'
+  copyfile(ASSETS + 'fire.mp4', filepath)
+  video.insert({ "_id" : pid, "@context" : { "dc:type" : "@type", "hummedia" : "http://humanities.byu.edu/hummedia/", "ma" : "http://www.w3.org/ns/ma-ont/", "dc" : "http://purl.org/dc/elements/1.1/", "dc:identifier" : "@id" }, "@graph" : { "dc:coverage" : "private", "dc:creator" : "testuser", "dc:date" : "2013-08-29", "dc:identifier" : "hummedia:id/video/"+pid, "dc:rights" : { "read" : [ ], "write" : [ ] }, "dc:type" : "hummedia:type/humvideo", "ma:averageBitRate" : 903903, "ma:date" : 1970, "ma:description" : "None", "ma:duration" : 0, "ma:features" : [ ], "ma:frameHeight" : 360, "ma:frameRate" : 25, "ma:frameSizeUnit" : "px", "ma:frameWidth" : 720, "ma:hasContributor" : [ ], "ma:hasGenre" : { "@id" : None, "name" : None }, "ma:hasKeyword" : [  "film",  "German" ], "ma:hasLanguage" : [  "en" ], "ma:hasPolicy" : [ ], "ma:hasRelatedResource" : [ ], "ma:height" : 400, "ma:isCopyrightedBy" : { "@id" : None, "name" : None }, "ma:isMemberOf" : [     {   "@id" : "anothertest",     "title" : "Test Videos" },    {   "@id" : "testid",     "title" : "testtitle" } ], "ma:isRelatedTo" : [ ], "ma:locator" : [  {   "@id" : filename,  "ma:hasFormat" : "video/mp4",   "ma:hasCompression" : {     "@id" : "http://www.freebase.com/view/en/h_264_mpeg_4_avc",     "name" : "avc.42E01E" } } ], "ma:title" : "Test Video", "pid" : pid } })
+  
+  pid2 = str(ObjectId())
+  video.insert({ "_id" : pid2, "@context" : { "dc:type" : "@type", "hummedia" : "http://humanities.byu.edu/hummedia/", "ma" : "http://www.w3.org/ns/ma-ont/", "dc" : "http://purl.org/dc/elements/1.1/", "dc:identifier" : "@id" }, "@graph" : { "dc:coverage" : "private", "dc:creator" : "testuser", "dc:date" : "2013-08-29", "dc:identifier" : "hummedia:id/video/"+pid2, "dc:rights" : { "read" : [ ], "write" : [ ] }, "dc:type" : "hummedia:type/humvideo", "ma:averageBitRate" : 903903, "ma:date" : 1970, "ma:description" : "None", "ma:duration" : 0, "ma:features" : [ ], "ma:frameHeight" : 360, "ma:frameRate" : 25, "ma:frameSizeUnit" : "px", "ma:frameWidth" : 720, "ma:hasContributor" : [ ], "ma:hasGenre" : { "@id" : None, "name" : None }, "ma:hasKeyword" : [  "film",  "German" ], "ma:hasLanguage" : [  "en" ], "ma:hasPolicy" : [ ], "ma:hasRelatedResource" : [ ], "ma:height" : 400, "ma:isCopyrightedBy" : { "@id" : None, "name" : None }, "ma:isMemberOf" : [     {   "@id" : "anothertest",     "title" : "Test Videos" },    {   "@id" : "testid",     "title" : "testtitle" } ], "ma:isRelatedTo" : [ ], "ma:locator" : [  {   "@id" : filename,  "ma:hasFormat" : "video/mp4",   "ma:hasCompression" : {     "@id" : "http://www.freebase.com/view/en/h_264_mpeg_4_avc",     "name" : "avc.42E01E" } } ], "ma:title" : "Test Video", "pid" : pid2 } })
+
+  app.login(ACCOUNTS['SUPERUSER'])
+
+  response = app.delete('/video/' + pid)
+  assert isfile(filepath), "Video was deleted with two references."
+
+  response = app.delete('/video/' + pid2)
+  assert not isfile(filepath), "Video was not deleted after all references to the video were removed."
