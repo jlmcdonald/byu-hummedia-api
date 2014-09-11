@@ -165,8 +165,12 @@ class MediaAsset(Resource):
         for vid in alist:
             for image in vid["ma:image"]:
                 if image.get("ytId"):
-                    image["thumb"] = ytThumbs[image["ytId"]]["thumb"]
-                    image["poster"] = ytThumbs[image["ytId"]]["poster"]
+		    try:
+			    image["thumb"] = ytThumbs[image["ytId"]]["thumb"]
+			    image["poster"] = ytThumbs[image["ytId"]]["poster"]
+		    except Exception:
+			    image["thumb"] = None
+			    image["poster"] = None
                     image.pop("ytId",None)
         return mongo_jsonify(alist)
         
