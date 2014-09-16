@@ -106,6 +106,34 @@ def test_ingest(app, ACCOUNTS, ASSETS):
     filename = v.split('/')[-1]
     assert isfile(config.MEDIA_DIRECTORY + filename)
 
+def test_ingest_duplicate_id(app, ACCOUNTS, ASSETS):
+  from shutil import copyfile
+  from hummedia import config
+  from uuid import uuid4
+  
+  app.login(ACCOUNTS['SUPERUSER'])
+
+  filename = 'fire.mp4'
+  unique_id = str(uuid4())
+
+  new_filename = str(uuid4()) + '.mp4'
+  response = app.post('/video')
+  data = json.loads(response.data)
+  pid = data[u'pid']
+  copyfile(ASSETS + filename, config.INGEST_DIRECTORY + new_filename)
+  up = json.dumps([{"filepath": new_filename, "pid": pid, "id":  unique_id}])
+  ingest_response = app.post('/batch/video/ingest', data=up, content_type='application/json')
+  assert ingest_response.status_code is 200, "Error ingesting first video: \"%s\"" % ingest_response.data
+
+  response = app.post('/video')
+  new_filename = str(uuid4()) + '.mp4'
+  data = json.loads(response.data)
+  pid = data[u'pid']
+  copyfile(ASSETS + filename, config.INGEST_DIRECTORY + new_filename)
+  up = json.dumps([{"filepath": new_filename, "pid": pid, "id":  unique_id}])
+  ingest_response = app.post('/batch/video/ingest', data=up, content_type='application/json')
+  assert ingest_response.status_code is not 200, "Second video could overwrite first video."
+
 def test_no_dotfiles(app, ACCOUNTS):
   from uuid import uuid4
   import os
