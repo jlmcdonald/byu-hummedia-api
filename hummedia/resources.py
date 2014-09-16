@@ -552,52 +552,67 @@ def videoCreationBatch():
         from shutil import move
         from helpers import getVideoInfo
         packet=request.json
+
+        ids = [up.get('id') for up in packet]
+
+        if len(set(ids)) is not len(ids):
+            return bundle_400("Duplicate IDs found. Cannot update." % s)
+       
+        # test everything before we start ingesting, otherwise half the batch
+        # might get completed before we get an error. easier to just reject everything
+        # than half of everything
+        for up in packet:
+            i = up['id']
+            dupe = assets.find_one({'@graph.ma:locator': {'$elemMatch': {'@id': i}}})
+            mp4 = (unicode(config.MEDIA_DIRECTORY) + i + '.mp4').encode('utf-8')
+            webm = (unicode(config.MEDIA_DIRECTORY) + i + '.webm').encode('utf-8')
+            if path.isfile(mp4) or path.isfile(webm) or dupe is not None:
+                return bundle_400("That file (%s) already exists; try another unique ID." %i)
+
         for up in packet:
             filepath=unicode(config.INGEST_DIRECTORY + up['filepath'])
-	    new_file=unicode(config.MEDIA_DIRECTORY + up['id'] + ".mp4")
-	    if path.isfile(new_file):
-		return bundle_400("That file already exists; try another unique ID.")
-            if path.isfile(filepath.encode('utf-8')):
-                md=getVideoInfo(filepath.encode('utf-8'))
-                poster = config.POSTERS_DIRECTORY + "%s.jpg" % (up["id"])
-                thumb = config.POSTERS_DIRECTORY + "%s_thumb.jpg" % (up["id"])
-                move(filepath.encode('utf-8'), new_file.encode('utf-8'))
-                assets.update({"_id":up["pid"]},{"$set":{
-                    "@graph.ma:frameRate":float(md["framerate"]),
-                    "@graph.ma:averageBitRate":int(float(md["bitrate"])),
-                    "@graph.ma:frameWidth":int(md["width"]),
-                    "@graph.ma:frameHeight":int(md["height"]),
-                    "@graph.ma:duration":int( round(float(md["duration"])) )/60,
-                    "@graph.ma:locator": [
-                        {
-                            "@id": up["id"],
-                            "ma:hasFormat": "video/mp4",
-                            "ma:hasCompression": {"@id":"http://www.freebase.com/view/en/h_264_mpeg_4_avc","name": "avc.42E01E"}
-                        },
-                        {
-                            "@id": up["id"],
-                            "ma:hasFormat": "video/webm",
-                            "ma:hasCompression": {"@id":"http://www.freebase.com/m/0c02yk5","name":"vp8.0"}
-                        }
-                    ]
-                }})
-                imgcmd = "avconv -i '%s' -q:v 1 -r 1 -t 00:00:01 -ss 00:00:30 -f image2 '%s'" % (new_file,poster)
-                system(imgcmd.encode('utf-8'))
-                chmod(poster,0775)
-                im=Image.open(poster)
-                im.thumbnail((160,90))
-                im.save(thumb)
-                chmod(thumb,0775)
-                
-                if not app.config.get('TESTING'):
-                    from gearman import GearmanClient
-                    client = GearmanClient(config.GEARMAN_SERVERS)
-                    client.submit_job("generate_webm", str(up["id"]))
-                else:
-                    from ingest import generate_webm
-                    result = generate_webm(file_id=up['id'])
-                    if result == "ERROR":
-                      raise Exception("Could not convert media file.")
+            new_file=unicode(config.MEDIA_DIRECTORY + up['id'] + ".mp4")
+
+            md=getVideoInfo(filepath.encode('utf-8'))
+            poster = config.POSTERS_DIRECTORY + "%s.jpg" % (up["id"])
+            thumb = config.POSTERS_DIRECTORY + "%s_thumb.jpg" % (up["id"])
+            move(filepath.encode('utf-8'), new_file.encode('utf-8'))
+            assets.update({"_id":up["pid"]},{"$set":{
+                "@graph.ma:frameRate":float(md["framerate"]),
+                "@graph.ma:averageBitRate":int(float(md["bitrate"])),
+                "@graph.ma:frameWidth":int(md["width"]),
+                "@graph.ma:frameHeight":int(md["height"]),
+                "@graph.ma:duration":int( round(float(md["duration"])) )/60,
+                "@graph.ma:locator": [
+                    {
+                        "@id": up["id"],
+                        "ma:hasFormat": "video/mp4",
+                        "ma:hasCompression": {"@id":"http://www.freebase.com/view/en/h_264_mpeg_4_avc","name": "avc.42E01E"}
+                    },
+                    {
+                        "@id": up["id"],
+                        "ma:hasFormat": "video/webm",
+                        "ma:hasCompression": {"@id":"http://www.freebase.com/m/0c02yk5","name":"vp8.0"}
+                    }
+                ]
+            }})
+            imgcmd = "avconv -i '%s' -q:v 1 -r 1 -t 00:00:01 -ss 00:00:30 -f image2 '%s'" % (new_file,poster)
+            system(imgcmd.encode('utf-8'))
+            chmod(poster,0775)
+            im=Image.open(poster)
+            im.thumbnail((160,90))
+            im.save(thumb)
+            chmod(thumb,0775)
+            
+            if not app.config.get('TESTING'):
+                from gearman import GearmanClient
+                client = GearmanClient(config.GEARMAN_SERVERS)
+                client.submit_job("generate_webm", str(up["id"]))
+            else:
+                from ingest import generate_webm
+                result = generate_webm(file_id=up['id'])
+                if result == "ERROR":
+                  raise Exception("Could not convert media file.")
 	return "Success"
 
 class AssetGroup(Resource):
