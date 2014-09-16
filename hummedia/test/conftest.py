@@ -47,6 +47,19 @@ def raise_(ex):
   raise ex
 
 @pytest.fixture(autouse=True)
+def empty_directories(request):
+  import shutil
+  from hummedia import config
+
+  def remove():
+    dirs = ('SUBTITLE_DIRECTORY','MEDIA_DIRECTORY','INGEST_DIRECTORY','POSTERS_DIRECTORY')
+    for path in [getattr(config,d) for d in dirs]:
+      for f in os.listdir(path):
+        os.unlink(path + f)
+
+  request.addfinalizer(remove)
+
+@pytest.fixture(autouse=True)
 def configure():
   '''
   NOTE: SEE hummedia/__init__.py for other test-specific configuration values
