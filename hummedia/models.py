@@ -194,7 +194,7 @@ class Video(Document):
             "ma:title": unicode
         }
     }
-    required_fields=["@context","@graph.dc:creator","@graph.dc:date","@graph.dc:type","@graph.ma:date","@graph.ma:hasLanguage","@graph.ma:title"]
+    required_fields=["@context","@graph.dc:creator","@graph.dc:date","@graph.dc:type","@graph.ma:date","@graph.ma:hasLanguage","@graph.ma:title", "@graph.ma:duration"]
     default_values={
         "@context": {
             "dc": "http://purl.org/dc/elements/1.1/",
@@ -208,6 +208,7 @@ class Video(Document):
         "@graph.dc:type": "hummedia:type/humvideo",
         "@graph.ma:title":u"New Hummedia Video",
         "@graph.ma:date": 1900,
+	"@graph.ma:duration": 0,
         "@graph.ma:hasLanguage":["en"],
         "@graph.dc:coverage":"private",
         "@graph.ma:frameRate": 23.976,
