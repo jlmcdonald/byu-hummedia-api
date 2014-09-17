@@ -113,7 +113,7 @@ class MediaAsset(Resource):
     max_search_results = 20
     
     def set_disallowed_atts(self):
-        self.disallowed_atts=["dc:identifier","pid","dc:type","url"]
+        self.disallowed_atts=["dc:identifier","pid","dc:type","url","ma:duration"]
         from auth import get_profile
         atts=get_profile()
         if not atts['superuser']:
