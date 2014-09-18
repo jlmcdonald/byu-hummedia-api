@@ -220,3 +220,23 @@ def test_should_ignore_bad_duration_data(app, ACCOUNTS, ASSETS):
   result = app.patch('/video/' + pid, data=json.dumps(vid), headers={'Content-Type': 'application/json'})
   new_vid = json.loads(result.data)
   assert new_vid['ma:duration'] is not None
+
+def test_ingest_should_set_duration(app, ACCOUNTS, ASSETS):
+  from uuid import uuid4
+  from shutil import copyfile
+  from hummedia import config
+  from os.path import isfile
+  filename = 'fire-long.mp4'
+
+  app.login(ACCOUNTS['SUPERUSER'])
+  response = app.post('/video')
+  data = json.loads(response.data)
+  pid = data[u'pid']
+  copyfile(ASSETS + filename, config.INGEST_DIRECTORY + filename)
+  up = json.dumps([{"filepath": filename, "pid": pid, "id":  str(uuid4())}])
+  ingest_response = app.post('/batch/video/ingest', data=up, content_type='application/json')
+
+  vid_response = app.get('/video/' + pid)
+  vid = json.loads(vid_response.data)
+
+  assert vid['ma:duration'] > 0
