@@ -10,6 +10,7 @@ cache:
 
 install: 
   - pip install -r requirements.txt --no-use-wheel --download-cache $HOME/.pip-cache
+  - sudo apt-get update
   - sudo apt-get install ffmpeg
 
 before_script: cp hummedia/config.template.py hummedia/config.py
