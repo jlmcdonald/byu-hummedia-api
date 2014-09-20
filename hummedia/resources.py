@@ -829,6 +829,37 @@ class Annotation(Resource):
         
     def serialize_bundle(self,payload):
         return mongo_jsonify(payload["@graph"])
+
+    def acl_write_check(self, bundle=None):
+        if super(Annotation, self).acl_write_check(bundle=self.bundle):
+            return True
+
+        from auth import get_profile
+        atts=get_profile()
+
+        pid = bundle['@graph']['pid']
+        
+        vid=assets.find_one(bundle["@graph"]["dc:relation"])
+        required = True if pid in vid["@graph"].get("ma:hasPolicy") else False
+        
+        if required and atts['role'] == 'faculty':
+            return True
+
+        name = atts['username']
+
+        # check to see if has write access to the collection
+        for col in vid['@graph']['ma:isMemberOf']:
+            if col['restrictor'] == pid:
+                query = ({
+                  "$or": [
+                    {"@graph.dc:rights.write": {"$elemMatch": {"username": name}}},
+                    {"@graph.dc:creator": name}
+                  ]
+                })
+                if ags.find_one(query) is not None:
+                    return True
+
+        return False
         
     def set_disallowed_atts(self):
         from auth import get_profile
