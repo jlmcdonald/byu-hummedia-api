@@ -779,6 +779,18 @@ class Annotation(Resource):
             q={}
         return q
 
+    def get(self, id, limit=0):
+        ''' 
+            TODO: this is hackish, and just here to prevent things coming back
+            as lists
+        '''
+        q=self.set_query()
+        new_id=id
+        if not id and q.get('_id',False) and len(q['_id']['$in']) is 1:
+            new_id=q['_id']['$in'][0]
+
+        return super(Annotation, self).get(new_id, limit)
+
     def get_list(self):
         alist=[]
         self.bundle=self.auth_filter()
