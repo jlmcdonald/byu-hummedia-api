@@ -63,31 +63,3 @@ def test_collection_write_access_can_annotate(app, ACCOUNTS):
 
   assert col_based_patch.status_code is 200, "Faculty with write access could not modify collection-based annotations. Status: %d" % col_based_patch.status_code
   assert req_patch.status_code is 200, "Faculty with write access could not modify required annotations. Status: %d" % req_patch.status_code
-
-def test_collection_annotations_not_as_lists(app, ACCOUNTS):
-  ''' There's a bug where collection-based annotations are coming back as lists.
-      This oughta catch it. '''
-  
-  app.login(ACCOUNTS['SUPERUSER'])
-  
-  v = app.post('/video')
-  data = json.loads(v.data)
-  vid_pid = data['pid']
-
-  c = app.post('/collection', data=json.dumps({}), headers={'Content-Type': 'application/json'})
-  data = json.loads(c.data)
-  col_pid = data['pid']
-
-  # attach video to collection
-  membership = [{"collection":{"id":col_pid,"title":"Something"},"videos":[vid_pid]}]
-  membership_result = app.post('/batch/video/membership', data=json.dumps(membership), headers={'Content-Type': "application/json"})
-  assert membership_result.status_code is 200
-
-  collection_based = {"media":[{"id":vid_pid,"name":"Media0","url":["https://milo.byu.edu///movies/50aba99cbe3e2dadd67872da44b0da94/54131f93/0033467.mp4","https://milo.byu.edu///movies/b4861e89ca5c8adf5ae37281743206cd/54131f93/0033467.webm"],"target":"hum-video","duration":300.011,"popcornOptions":{"frameAnimation":True},"controls":False,"tracks":[{"name":"Layer 0","id":"0","trackEvents":[{"id":"TrackEvent0","type":"skip","popcornOptions":{"start":0,"end":5,"target":"target-0","__humrequired":False,"id":"TrackEvent0"},"track":"0","name":"TrackEvent0"}]}],"clipData":{}}]}
-  col_result = app.post('/annotation?client=popcorn&collection=' + col_pid, data=json.dumps(collection_based), headers={'Content-Type':'application/json'})
-  assert col_result.status_code is 200, "Superuser could not create collection-based annotation"
-
-  annotation_result = app.get('/annotation?client=popcorn&collection=' + col_pid + '&dc:relation=' + vid_pid)
-  data = json.loads(annotation_result.data)
-
-  assert type(data) is not list
