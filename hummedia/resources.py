@@ -665,6 +665,22 @@ class AssetGroup(Resource):
         atts=get_profile()
         if not atts['superuser']:
             self.bundle["@graph"]["dc:creator"]=atts['username']
+
+    def find_by_relations(self, video, collection):
+        """ Finds any one annotation tied to a given video-collection pair """
+
+        v=assets.find_one({"_id":str(video)})
+        if v:
+            annots=[]
+            # don't include required edits in collection queries
+            for coll in v["@graph"]["ma:isMemberOf"]:
+                if coll["@id"]==str(collection) and "restrictor" in coll:
+                    annots.append(str(coll['restrictor']))
+            q={"_id":{'$in':annots}}
+            return annotations.find_one(q)
+
+        return None
+        
         
     def serialize_bundle(self,payload):
         if payload:
@@ -680,7 +696,7 @@ class AssetGroup(Resource):
                     vid["@graph"]["resource"]=resource
                     vid["@graph"]["ma:image"]=[]
                     
-                    annot=annotations.find_one({"@graph.dc:relation":vid['@graph']['pid'], '@graph.collection': payload['_id']})
+                    annot=self.find_by_relations(vid['@graph']['pid'], payload['_id'])
                     try:
                         vid['@graph']['transcript']=bool(annot['@graph']['vcp:playSettings']['vcp:showTranscript'])
                     except (TypeError, KeyError):
