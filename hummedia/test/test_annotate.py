@@ -64,7 +64,7 @@ def test_collection_write_access_can_annotate(app, ACCOUNTS):
   assert col_based_patch.status_code is 200, "Faculty with write access could not modify collection-based annotations. Status: %d" % col_based_patch.status_code
   assert req_patch.status_code is 200, "Faculty with write access could not modify required annotations. Status: %d" % req_patch.status_code
 
-def test_collection_annotations_not_as_lists(app, ACCOUNTS):
+def test_collection_annotations_not_with_required(app, ACCOUNTS):
   ''' There's a bug where collection-based annotations are coming back with
       required annotations included in the same list. '''
   
