@@ -97,3 +97,40 @@ def test_collection_annotations_not_with_required(app, ACCOUNTS):
   data = json.loads(annotation_result.data)
 
   assert len(data) is 1
+
+def test_patch_with_transcript(app, ACCOUNTS):
+  app.login(ACCOUNTS['SUPERUSER'])
+
+  v = app.post('/video')
+  data = json.loads(v.data)
+  vid_pid = data['pid']
+
+  c = app.post('/collection', data=json.dumps({}), headers={'Content-Type': 'application/json'})
+  data = json.loads(c.data)
+  col_pid = data['pid']
+
+  # attach video to collection
+  membership = [{"collection":{"id":col_pid,"title":"Something"},"videos":[vid_pid]}]
+  membership_result = app.post('/batch/video/membership', data=json.dumps(membership), headers={'Content-Type': "application/json"})
+  assert membership_result.status_code is 200
+
+  # now make a collection-based annotation
+  collection_based = {"media":[{"id":vid_pid,"name":"Media0","url":["https://milo.byu.edu///movies/50aba99cbe3e2dadd67872da44b0da94/54131f93/0033467.mp4","https://milo.byu.edu///movies/b4861e89ca5c8adf5ae37281743206cd/54131f93/0033467.webm"],"target":"hum-video","duration":300.011,"popcornOptions":{"frameAnimation":True},"controls":False,"tracks":[{"name":"Layer 0","id":"0","trackEvents":[{"id":"TrackEvent0","type":"skip","popcornOptions":{"start":0,"end":5,"target":"target-0","__humrequired":False,"id":"TrackEvent0"},"track":"0","name":"TrackEvent0"}]}],"clipData":{}}]}
+  col_result = app.post('/annotation?client=popcorn&collection=' + col_pid, data=json.dumps(collection_based), headers={'Content-Type':'application/json'})
+  assert col_result.status_code is 200, "Superuser could not create collection-based annotation"
+
+  # maketh a required annotation
+  required = {"media":[{"id":vid_pid,"name":"Media0","url":["https://milo.byu.edu///movies/50aba99cbe3e2dadd67872da44b0da94/54131f93/0033467.mp4","https://milo.byu.edu///movies/b4861e89ca5c8adf5ae37281743206cd/54131f93/0033467.webm"],"target":"hum-video","duration":300.011,"popcornOptions":{"frameAnimation":True},"controls":False,"tracks":[{"name":"Layer 0","id":"0","trackEvents":[]}],"clipData":{}}]}
+  req_result = app.post('/annotation?client=popcorn', data=json.dumps(required), headers={'Content-Type': 'application/json'})
+  assert req_result.status_code is 200, "Superuser could not create required annotation"
+
+  # try to add a transcript
+  ann_pid = json.loads(col_result.data)['media'][0]['tracks'][0]['id']
+  data ={"pid":ann_pid,"vcp:playSettings":{"vcp:showTranscript":True}}
+  app.patch('/annotation/' + ann_pid, data=json.dumps(data), headers={'Content-Type':'application/json'})
+
+  # make sure the transcript is included in the data that comes back from the server
+  full_coll = app.get('/collection/' + col_pid + '?full=true')
+  full_coll_data = json.loads(full_coll.data)
+
+  assert full_coll_data['videos'][0]['transcript'], "Transcript not enabled."
