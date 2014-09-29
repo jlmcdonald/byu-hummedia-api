@@ -240,3 +240,35 @@ def test_ingest_should_set_duration(app, ACCOUNTS, ASSETS):
   vid = json.loads(vid_response.data)
 
   assert vid['ma:duration'] > 0
+
+def test_replace_video(app, ACCOUNTS, ASSETS):
+  ''' For when incorrect videos are uploaded. '''
+
+  from uuid import uuid4
+  from shutil import copyfile
+  from hummedia import config
+  from os.path import isfile
+  import filecmp
+
+  filename = 'fire-long.mp4'
+  replacement = 'fire-flip.mp4'
+  uid = str(uuid4())
+
+  app.login(ACCOUNTS['SUPERUSER'])
+  response = app.post('/video')
+  data = json.loads(response.data)
+  pid = data[u'pid']
+  copyfile(ASSETS + filename, config.INGEST_DIRECTORY + filename)
+  copyfile(ASSETS + replacement, config.INGEST_DIRECTORY + replacement)
+  up = json.dumps([{"filepath": filename, "pid": pid, "id":  uid}])
+  ingest_response = app.post('/batch/video/ingest', data=up, content_type='application/json')
+
+  vid_response = app.get('/video/' + pid)
+  vid = json.loads(vid_response.data)
+
+  data = json.dumps({'replacement_file': replacement})
+  replace_response = app.patch('/video/' + vid['pid'], data=data, content_type='application/json')
+  updated = json.loads(replace_response.data)
+
+  assert isfile(config.MEDIA_DIRECTORY + uid + '.mp4')
+  assert filecmp.cmp(config.MEDIA_DIRECTORY + uid + '.mp4', ASSETS + replacement), "Video was not replaced."
