@@ -268,6 +268,8 @@ def test_replace_video(app, ACCOUNTS, ASSETS):
 
   data = json.dumps({'replacement_file': replacement})
   replace_response = app.patch('/video/' + vid['pid'], data=data, content_type='application/json')
+
+  assert replace_response.status_code is 200, "Error: " + replace_response.data
   updated = json.loads(replace_response.data)
 
   assert isfile(config.MEDIA_DIRECTORY + uid + '.mp4')

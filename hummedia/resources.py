@@ -111,6 +111,111 @@ class MediaAsset(Resource):
     endpoint="video"
     override_only_triggers=['enrollment']
     max_search_results = 20
+
+    def patch(self, id):
+        from auth import get_profile
+        atts=get_profile()
+
+        if not atts['superuser']:
+            return action_401()
+
+        if self.request.json is None or 'replacement_file' not in self.request.json:
+            return super(MediaAsset, self).patch(id)
+
+        found = assets.find_one({'_id': id})
+
+        if not found:
+            return bundle_404()
+
+        file_id = None
+        to_delete = []
+
+        # find existing filenames
+        for f in found['@graph']['ma:locator']:
+            if file_id is not None and f['@id'] != file_id:
+                raise Exception("Cannot replace file; multiple files with different IDs")
+
+            file_id = f['@id']
+            extension = f['ma:hasFormat'].split('/')[-1]
+            fpath = config.MEDIA_DIRECTORY + f['@id'] + '.' + extension
+            to_delete.append(fpath)
+
+        from os import remove
+        for f in to_delete:
+            remove(f)
+
+        assets.update({'_id': id}, {'$set': {'@graph.ma:locator': []}})
+
+        result = self.set_new_file(id, file_id, self.request.json['replacement_file'])
+        if not result[0]:
+            return bundle_400(result[1])
+
+        return self.serialize_bundle(assets.find_one({'_id': id}))
+
+    @staticmethod
+    def set_new_file(video_id, new_id, filepath):
+        ''' Returns a tuple with the first value T/F, and the second, if False,
+        the relevant message. '''
+
+        from helpers import getVideoInfo
+        from PIL import Image
+        from shutil import move
+
+        up = {'id': new_id, 'filepath': filepath, 'pid': video_id}
+
+        i = up['id']
+        dupe = assets.find_one({'@graph.ma:locator': {'$elemMatch': {'@id': i}}})
+        mp4 = (unicode(config.MEDIA_DIRECTORY) + i + '.mp4').encode('utf-8')
+        webm = (unicode(config.MEDIA_DIRECTORY) + i + '.webm').encode('utf-8')
+
+        if path.isfile(webm) or path.isfile(mp4) or dupe is not None:
+            return (False, "That file (%s) already exists; try another unique ID." %i)
+
+        filepath=unicode(config.INGEST_DIRECTORY + up['filepath'])
+        new_file=unicode(config.MEDIA_DIRECTORY + up['id'] + ".mp4")
+
+        md=getVideoInfo(filepath.encode('utf-8'))
+        poster = config.POSTERS_DIRECTORY + "%s.jpg" % (up["id"])
+        thumb = config.POSTERS_DIRECTORY + "%s_thumb.jpg" % (up["id"])
+        move(filepath.encode('utf-8'), new_file.encode('utf-8'))
+        assets.update({"_id":up["pid"]},{"$set":{
+            "@graph.ma:frameRate":float(md["framerate"]),
+            "@graph.ma:averageBitRate":int(float(md["bitrate"])),
+            "@graph.ma:frameWidth":int(md["width"]),
+            "@graph.ma:frameHeight":int(md["height"]),
+            "@graph.ma:duration":int( round(float(md["duration"])) )/60,
+            "@graph.ma:locator": [
+                {
+                    "@id": up["id"],
+                    "ma:hasFormat": "video/mp4",
+                    "ma:hasCompression": {"@id":"http://www.freebase.com/view/en/h_264_mpeg_4_avc","name": "avc.42E01E"}
+                },
+                {
+                    "@id": up["id"],
+                    "ma:hasFormat": "video/webm",
+                    "ma:hasCompression": {"@id":"http://www.freebase.com/m/0c02yk5","name":"vp8.0"}
+                }
+            ]
+        }})
+        imgcmd = "avconv -i '%s' -q:v 1 -r 1 -t 00:00:01 -ss 00:00:30 -f image2 '%s'" % (new_file,poster)
+        system(imgcmd.encode('utf-8'))
+        chmod(poster,0775)
+        im=Image.open(poster)
+        im.thumbnail((160,90))
+        im.save(thumb)
+        chmod(thumb,0775)
+
+        if not app.config.get('TESTING'):
+            from gearman import GearmanClient
+            client = GearmanClient(config.GEARMAN_SERVERS)
+            client.submit_job("generate_webm", str(up["id"]))
+        else:
+            from ingest import generate_webm
+            result = generate_webm(file_id=up['id'])
+            if result == "ERROR":
+                raise Exception("Could not convert media file.")
+
+        return (True,)
     
     def set_disallowed_atts(self):
         self.disallowed_atts=["dc:identifier","pid","dc:type","url","ma:duration"]
@@ -552,16 +657,13 @@ def videoCreationBatch():
         files=[f for f in listdir(getcwd()) if f[0] != '.']
         return json.dumps(files)
     else:
-        from PIL import Image
-        from shutil import move
-        from helpers import getVideoInfo
         packet=request.json
 
         ids = [up.get('id') for up in packet]
 
         if len(set(ids)) is not len(ids):
             return bundle_400("Duplicate IDs found. Cannot update." % s)
-       
+
         # test everything before we start ingesting, otherwise half the batch
         # might get completed before we get an error. easier to just reject everything
         # than half of everything
@@ -574,49 +676,10 @@ def videoCreationBatch():
                 return bundle_400("That file (%s) already exists; try another unique ID." %i)
 
         for up in packet:
-            filepath=unicode(config.INGEST_DIRECTORY + up['filepath'])
-            new_file=unicode(config.MEDIA_DIRECTORY + up['id'] + ".mp4")
+            result = MediaAsset.set_new_file(up['pid'], up['id'], up['filepath'])
+            if not result[0]:
+                return bundle_400(result[1])
 
-            md=getVideoInfo(filepath.encode('utf-8'))
-            poster = config.POSTERS_DIRECTORY + "%s.jpg" % (up["id"])
-            thumb = config.POSTERS_DIRECTORY + "%s_thumb.jpg" % (up["id"])
-            move(filepath.encode('utf-8'), new_file.encode('utf-8'))
-            assets.update({"_id":up["pid"]},{"$set":{
-                "@graph.ma:frameRate":float(md["framerate"]),
-                "@graph.ma:averageBitRate":int(float(md["bitrate"])),
-                "@graph.ma:frameWidth":int(md["width"]),
-                "@graph.ma:frameHeight":int(md["height"]),
-                "@graph.ma:duration":int( round(float(md["duration"])) )/60,
-                "@graph.ma:locator": [
-                    {
-                        "@id": up["id"],
-                        "ma:hasFormat": "video/mp4",
-                        "ma:hasCompression": {"@id":"http://www.freebase.com/view/en/h_264_mpeg_4_avc","name": "avc.42E01E"}
-                    },
-                    {
-                        "@id": up["id"],
-                        "ma:hasFormat": "video/webm",
-                        "ma:hasCompression": {"@id":"http://www.freebase.com/m/0c02yk5","name":"vp8.0"}
-                    }
-                ]
-            }})
-            imgcmd = "avconv -i '%s' -q:v 1 -r 1 -t 00:00:01 -ss 00:00:30 -f image2 '%s'" % (new_file,poster)
-            system(imgcmd.encode('utf-8'))
-            chmod(poster,0775)
-            im=Image.open(poster)
-            im.thumbnail((160,90))
-            im.save(thumb)
-            chmod(thumb,0775)
-            
-            if not app.config.get('TESTING'):
-                from gearman import GearmanClient
-                client = GearmanClient(config.GEARMAN_SERVERS)
-                client.submit_job("generate_webm", str(up["id"]))
-            else:
-                from ingest import generate_webm
-                result = generate_webm(file_id=up['id'])
-                if result == "ERROR":
-                  raise Exception("Could not convert media file.")
 	return "Success"
 
 class AssetGroup(Resource):
