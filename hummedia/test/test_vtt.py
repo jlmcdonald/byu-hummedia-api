@@ -36,6 +36,13 @@ def test_iso_8859_srt(ASSETS):
   compare = open(ASSETS + 'utf8.vtt', 'r')
   assert o.getvalue() == compare.read()
 
+def test_special_chars(ASSETS):
+  i = open(ASSETS + 'special-chars.srt')
+  o = io.BytesIO()
+  vtt.from_srt(i, o)
+  compare = open(ASSETS + 'special-chars.vtt', 'r')
+  assert o.getvalue() == compare.read()
+
 def test_shift_time(ASSETS):
   f = io.BytesIO()
   vtt.shift_time(ASSETS + 'subs.vtt', f, 10)
