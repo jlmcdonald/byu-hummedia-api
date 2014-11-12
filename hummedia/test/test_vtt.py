@@ -1,8 +1,12 @@
 import pytest
 import io
 import json
+import sys
 from .. import config
 from .. import vtt
+
+reload(sys)
+sys.setdefaultencoding('utf-8')
 
 def test_from_srt(ASSETS):
   f = io.BytesIO()
@@ -21,7 +25,9 @@ def test_from_srt_file(ASSETS):
   o = io.BytesIO()
   vtt.from_srt(i, o)
   compare = open(ASSETS + 'subs.vtt', 'r')
-  assert o.getvalue() == compare.read()
+  v = o.getvalue().decode('utf8')
+  w = compare.read().decode('utf8')
+  assert v == w
 
 def test_from_bad_srt(ASSETS):
   i = open(ASSETS + 'fake.srt')
@@ -34,6 +40,13 @@ def test_iso_8859_srt(ASSETS):
   o = io.BytesIO()
   vtt.from_srt(i, o)
   compare = open(ASSETS + 'utf8.vtt', 'r')
+  assert o.getvalue() == compare.read()
+
+def test_special_chars(ASSETS):
+  i = open(ASSETS + 'special-chars.srt')
+  o = io.BytesIO()
+  vtt.from_srt(i, o)
+  compare = open(ASSETS + 'special-chars.vtt', 'r')
   assert o.getvalue() == compare.read()
 
 def test_shift_time(ASSETS):

@@ -7,3 +7,4 @@ gearman
 chardet
 mutagen
 Pillow
+-e git://github.com/BYU-ODH/pycaption.git@33d96456310d84c9acc78d0d2bde18aa9dea0cf7#egg=pycaption

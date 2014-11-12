@@ -3,6 +3,8 @@ import codecs
 import contextlib
 import chardet
 import os
+import unicodedata
+from pycaption import WebVTTWriter, SRTReader, CaptionConverter
 
 VALIDATION_BIN = 'node ' + os.path.dirname(os.path.realpath(__file__)) +\
                  os.sep + 'validate-vtt.js'
@@ -50,12 +52,12 @@ def from_srt(input_f, output_f):
     Takes an input SRT file or filename and writes out VTT contents to the given 
     output file or filename
   """
-  import tempfile
-
-  timestamp = "\n(\d{2}:\d{2}:\d{2}),(\d{3}\s*-->\s*\d{2}:\d{2}:\d{2}),(\d{3})\s*\n"
-
   with vtt_open(input_f, 'r') as f:
     orig = f.read()
+
+    # caption converter seems to have a tough time with the BOM on
+    # Python < 2.7.8, so ditch it if it exists.
+    orig = orig[3:] if orig[:3] == codecs.BOM_UTF8 else orig
     detect = chardet.detect(orig)
     encoding = detect['encoding']
     confidence = detect['confidence']
@@ -64,30 +66,13 @@ def from_srt(input_f, output_f):
       encoding = 'cp1252' # standard for SubRip files
 
     contents = orig.decode(encoding)
-  
-  # strip carriage returns for consistency's sake
-  contents = re.sub("\r\n","\n",contents)
-  contents = re.sub(u'\ufeff','',contents) # remove BOM
 
-  # remove cue numbering
-  regex = re.compile('\d+(?=' + timestamp + ')', re.MULTILINE)
-  contents = re.sub(regex, "", contents)
-
-  # change timing 
-  contents = re.sub(timestamp, "\\1.\\2.\\3\n", contents)
-
-  # append correct header
-  contents = 'WEBVTT\n\n' + contents
-
-  # validate first
-  f = tempfile.NamedTemporaryFile()
-  f.write(contents.encode('utf-8'))
-  f.flush()
-  if not is_valid(f.name):
-    raise SubtitleException("SRT could not be converted to a valid subtitle file.")
+  converter = CaptionConverter()
+  converter.read(contents, SRTReader())
+  contents = converter.write(WebVTTWriter())
 
   with vtt_open(output_f, 'w') as o:
-    o.write(contents.encode('utf-8'))
+    o.write(contents.encode('utf-8')[:-1])
 
 def shift_time(input_f, output_f, offset_secs):
   """
