@@ -861,7 +861,10 @@ class Annotation(Resource):
         alist=[]
         self.bundle=self.auth_filter()
         for d in self.bundle:
-            if self.request.args.get("client",None):
+            client = self.request.args.get("client",None)
+            if client:
+                if not clients.lookup[client].allow_as_list:
+                    return self.client_process(d, True)
                 alist.append(self.client_process(d,True))
             else:
                 d["@graph"]["resource"]=uri_pattern(d["@graph"]["pid"],config.APIHOST+"/"+self.endpoint)
@@ -946,8 +949,11 @@ class Annotation(Resource):
             self.disallowed_atts.append("dc:creator")
     
     def set_attrs(self):
+        import traceback
+        from flask import send_file
         if "client" in self.request.args:
-            c=clients.lookup[self.request.args.get("client")]()
+            client_name = self.request.args.get("client")
+            c=clients.lookup[client_name]()
             packet=c.deserialize(self.request)
         else:
             packet=self.request.json

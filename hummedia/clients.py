@@ -1,8 +1,13 @@
 from flask import Response
 import json, helpers, copy
 from auth import get_user
+import config
 
-class Popcorn_Client():
+class Client():
+    # Whether or not this client allows a response as a list
+    allow_as_list = True
+
+class Popcorn_Client(Client):
     TYPES={"oax:classification": "reference","oax:description":"modal","oax:comment":"comment","oax:question":"interaction","oax:link":"link"}
     TARGETS={"popup":"target-0","comment":"target-1","reference":"target-2","interaction":"target-3", "link":"target-4"}
     def deserialize(self,request):
@@ -81,5 +86,50 @@ class Popcorn_Client():
             return Response(json.dumps(popcorn, cls=helpers.mongokitJSON),status=200,mimetype="application/json")
         else:
             return popcorn
-        
-lookup={"popcorn": Popcorn_Client}
+
+class IC_Client(Client):
+    ''' For the international cinema. Provides a zip file. Serialization only '''
+    allow_as_list = False
+
+    def serialize(self,obj,media,resp=True,required=None):
+        ''' Required and resp are ignored but needed for duck typing '''
+
+        import json, string, io
+        import traceback
+        import tempfile
+        from flask import send_file
+        from zipfile import ZipFile
+
+        collection = Popcorn_Client().serialize(obj, media, False, False)
+        required = Popcorn_Client().serialize(obj, media, False, True)
+        both = [collection, required]
+
+        filename = filter(lambda x: x in string.ascii_letters, media['ma:title'])
+
+        try:
+            subtitle_name = media['ma:hasRelatedResource'][0]['@id'].split('/')[-1]
+            subtitle = config.SUBTITLE_DIRECTORY + subtitle_name
+        except (KeyError, IndexError) as e:
+            subtitle = None
+
+        icf = {
+            'video': filename + '.mp4',
+            'annotations': filename + '.json',
+            'subtitles': None if subtitle is None else filename + '.vtt'
+        }
+
+        zipholder = tempfile.NamedTemporaryFile()
+        z = ZipFile(zipholder, 'w')
+        z.writestr(filename + '.json', json.dumps(both))
+        z.writestr(filename + '.icf', json.dumps(icf))
+        if subtitle is not None:
+            z.write(subtitle, filename + '.vtt')
+
+        return send_file(
+            zipholder.name,
+            mimetype='application/zip',
+            as_attachment=True,
+            attachment_filename=media['ma:title'] + '.zip'
+        )
+
+lookup={"popcorn": Popcorn_Client, "ic": IC_Client}
