@@ -79,7 +79,8 @@ class Resource(object):
         pass
 
     def patch(self,id):
-        self.bundle=self.model.find_one({'_id': str(id)})
+        from bson.objectid import ObjectId
+        self.bundle=self.model.find_one({'$or': [{'_id': str(id)}, {'_id': ObjectId(id)}]})
         if self.acl_write_check(self.bundle):
             setattrs=self.set_attrs()
 	    if setattrs.get("resp")==200:
