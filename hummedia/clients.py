@@ -125,6 +125,8 @@ class IC_Client(Client):
         if subtitle is not None:
             z.write(subtitle, filename + '.vtt')
 
+        z.close()
+
         return send_file(
             zipholder.name,
             mimetype='application/zip',
