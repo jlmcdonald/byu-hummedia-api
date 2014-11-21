@@ -25,7 +25,7 @@ def test_download_ic_file(app, ACCOUNTS):
   assert col_result.status_code is 200, "Superuser could not create collection-based annotation"
 
   # maketh a required annotation
-  required = {"media":[{"id":vid_pid,"name":"Media0","url":["https://milo.byu.edu///movies/50aba99cbe3e2dadd67872da44b0da94/54131f93/0033467.mp4","https://milo.byu.edu///movies/b4861e89ca5c8adf5ae37281743206cd/54131f93/0033467.webm"],"target":"hum-video","duration":300.011,"popcornOptions":{"frameAnimation":True},"controls":False,"tracks":[{"name":"Layer 0","id":"0","trackEvents":[]}],"clipData":{}}]}
+  required = {"media":[{"id":vid_pid,"name":"Media0","url":["https://milo.byu.edu///movies/50aba99cbe3e2dadd67872da44b0da94/54131f93/0033467.mp4","https://milo.byu.edu///movies/b4861e89ca5c8adf5ae37281743206cd/54131f93/0033467.webm"],"target":"hum-video","duration":300.011,"popcornOptions":{"frameAnimation":True},"controls":False,"tracks":[{"name":"Layer 0","id":"0","trackEvents":[{"id":"TrackEvent0","type":"skip","popcornOptions":{"start":10,"end":25,"target":"target-0","__humrequired":False,"id":"TrackEvent0"},"track":"0","name":"TrackEvent0"}]}],"clipData":{}}]}
   req_result = app.post('/annotation?client=popcorn', data=json.dumps(required), headers={'Content-Type': 'application/json'})
   assert req_result.status_code is 200, "Superuser could not create required annotation"
 
@@ -41,3 +41,5 @@ def test_download_ic_file(app, ACCOUNTS):
   a_filename = filter(lambda fname: fname.endswith('.json'), items)[0]
   a = json.loads(z.read(a_filename))
   assert len(a) is 2, 'There are not two annotation sets in the annotation file.'
+  assert a[0]['media'][0]['tracks'][0]['trackEvents'][0]['popcornOptions']['start'] == '0'
+  assert a[1]['media'][0]['tracks'][0]['trackEvents'][0]['popcornOptions']['start'] == '5'
