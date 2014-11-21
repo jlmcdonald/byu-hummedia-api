@@ -43,3 +43,39 @@ def test_download_ic_file(app, ACCOUNTS):
   assert len(a) is 2, 'There are not two annotation sets in the annotation file.'
   assert a[0]['media'][0]['tracks'][0]['trackEvents'][0]['popcornOptions']['start'] == '0'
   assert a[1]['media'][0]['tracks'][0]['trackEvents'][0]['popcornOptions']['start'] == '5'
+
+def test_download_ic_file_subs_only(app, ACCOUNTS, ASSETS):
+  from zipfile import ZipFile
+  from StringIO import StringIO
+
+  app.login(ACCOUNTS['SUPERUSER'])
+
+  v = app.post('/video')
+  data = json.loads(v.data)
+  vid_pid = data['pid']
+
+  c = app.post('/collection', data=json.dumps({}), headers={'Content-Type': 'application/json'})
+  data = json.loads(c.data)
+  col_pid = data['pid']
+
+  # attach video to collection
+  membership = [{"collection":{"id":col_pid,"title":"Something"},"videos":[vid_pid]}]
+  membership_result = app.post('/batch/video/membership', data=json.dumps(membership), headers={'Content-Type': "application/json"})
+  assert membership_result.status_code is 200
+
+  with open(ASSETS + 'subs.vtt') as f:
+    data = {
+        'subtitle': (f, 'subs.vtt'),
+        'name': "The One True Subtitle",
+        'lang': 'en'
+    }
+    response = app.post('/video' + vid_pid, data=data)
+
+  annotation_result = app.get('/annotation?client=ic&collection=' + col_pid + '&dc:relation=' + vid_pid)
+  assert annotation_result.headers.get('Content-Type') == 'application/zip'
+
+  z = ZipFile(StringIO(annotation_result.data))
+  items = z.namelist()
+
+  assert len(filter(lambda fname: fname.endswith('.vtt'), items)) is 1, 'No subtitle in archive'
+  assert len(filter(lambda fname: fname.endswith('.icf'), items)) is 1, 'No ICF file in archive'
