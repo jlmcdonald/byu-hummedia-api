@@ -836,19 +836,23 @@ class Annotation(Resource):
 
     def read_override(self,obj,username,role):
         return True
+
+    def get_collection_query(self, media_id, collection_id):
+        q={"_id":False}
+        v=assets.find_one({"_id":str(media_id)})
+        if v:
+            annots=[]
+            # don't include required edits in collection queries
+            for coll in v["@graph"]["ma:isMemberOf"]:
+                if coll["@id"]==str(collection_id) and "restrictor" in coll:
+                    annots.append(str(coll['restrictor']))
+            q={"_id":{'$in':annots}}
+        return q
     
     def set_query(self):
         if self.request.args.get("dc:relation",False):
             if self.request.args.get("collection"):
-                q={"_id":False}
-                v=assets.find_one({"_id":str(self.request.args.get("dc:relation"))})
-                if v:
-                    annots=[]
-                    # don't include required edits in collection queries
-                    for coll in v["@graph"]["ma:isMemberOf"]:
-                        if coll["@id"]==str(self.request.args.get("collection")) and "restrictor" in coll:
-                            annots.append(str(coll['restrictor']))
-                    q={"_id":{'$in':annots}}
+                q=self.get_collection_query(self.request.args.get('dc:relation'), self.request.args.get('collection'))
             else:
                 q={"@graph.dc:relation":str(self.request.args.get("dc:relation"))}
         elif self.request.args.get("dc:creator",False):
@@ -857,14 +861,20 @@ class Annotation(Resource):
             q={}
         return q
 
+    def get(self, id, limit=0):
+        client = self.request.args.get('client', None)
+        if client == 'ic':
+            video = self.request.args.get('dc:relation')
+            collection = self.request.args.get('collection')
+            return clients.lookup['ic']().serialize(request, video, collection)
+        return super(Annotation, self).get(id, limit)
+
     def get_list(self):
         alist=[]
         self.bundle=self.auth_filter()
         for d in self.bundle:
             client = self.request.args.get("client",None)
             if client:
-                if not clients.lookup[client].allow_as_list:
-                    return self.client_process(d, True)
                 alist.append(self.client_process(d,True))
             else:
                 d["@graph"]["resource"]=uri_pattern(d["@graph"]["pid"],config.APIHOST+"/"+self.endpoint)
@@ -874,10 +884,13 @@ class Annotation(Resource):
     def set_resource(self):
         self.bundle["@graph"]["resource"]=uri_pattern(self.bundle["@graph"]["pid"],config.APIHOST+"/"+self.endpoint)
         
-    def client_process(self,bundle=None,list=False):
+    def client_process(self,bundle=None,list=False,client=None):
         if not bundle:
             bundle=self.bundle
-        c=clients.lookup[self.request.args.get("client")]()
+        if not client:
+            client = self.request.args.get("client")
+
+        c=clients.lookup[client]()
         m=assets.find_one(bundle["@graph"]["dc:relation"])
         m["@graph"]["resource"]=uri_pattern(m["@graph"]["pid"],config.APIHOST+"/video")
         m["@graph"]["type"]=resolve_type(m["@graph"]["dc:type"])

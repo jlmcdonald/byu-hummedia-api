@@ -4,8 +4,7 @@ from auth import get_user
 import config
 
 class Client():
-    # Whether or not this client allows a response as a list
-    allow_as_list = True
+  pass
 
 class Popcorn_Client(Client):
     TYPES={"oax:classification": "reference","oax:description":"modal","oax:comment":"comment","oax:question":"interaction","oax:link":"link"}
@@ -89,20 +88,33 @@ class Popcorn_Client(Client):
 
 class IC_Client(Client):
     ''' For the international cinema. Provides a zip file. Serialization only '''
-    allow_as_list = False
 
-    def serialize(self,obj,media,resp=True,required=None):
-        ''' Required and resp are ignored but needed for duck typing '''
+    def serialize(self, request, video_id, collection_id):
 
         import json, string, io
         import traceback
         import tempfile
         from flask import send_file
         from zipfile import ZipFile
+        from resources import Annotation, MediaAsset
 
-        collection = Popcorn_Client().serialize(obj, media, False, False)
-        required = Popcorn_Client().serialize(obj, media, False, True)
-        both = [collection, required]
+        media = MediaAsset.collection.find_one({'_id': video_id})['@graph']
+
+        annotations = []
+
+        a = Annotation(request=request)
+        for _id in media.get('ma:hasPolicy',[]):
+            required_bundle = Annotation.collection.find_one({'_id': _id})
+            required = a.client_process(bundle=required_bundle, client='popcorn')
+            annotations.append(json.loads(required.data))
+
+        query = Annotation(request).get_collection_query(video_id, collection_id)
+        collection_bundle = Annotation.collection.find(query)
+
+        if collection_bundle is not None:
+            for c in collection_bundle:
+                collection = a.client_process(bundle=c, client='popcorn')
+                annotations.append(json.loads(collection.data))
 
         filename = filter(lambda x: x in string.ascii_letters, media['ma:title'])
 
@@ -118,9 +130,10 @@ class IC_Client(Client):
             'subtitles': None if subtitle is None else filename + '.vtt'
         }
 
+
         zipholder = tempfile.NamedTemporaryFile()
         z = ZipFile(zipholder, 'w')
-        z.writestr(filename + '.json', json.dumps(both))
+        z.writestr(filename + '.json', json.dumps(annotations))
         z.writestr(filename + '.icf', json.dumps(icf))
         if subtitle is not None:
             z.write(subtitle, filename + '.vtt')
