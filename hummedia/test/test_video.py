@@ -274,3 +274,11 @@ def test_replace_video(app, ACCOUNTS, ASSETS):
 
   assert isfile(config.MEDIA_DIRECTORY + uid + '.mp4')
   assert filecmp.cmp(config.MEDIA_DIRECTORY + uid + '.mp4', ASSETS + replacement), "Video was not replaced."
+
+def test_concise_video_list(app, ACCOUNTS, ASSETS):
+  ''' Media is starting to load slowly; we just need minimal information for our admin interface. '''
+  app.login(ACCOUNTS['SUPERUSER'])
+  r = app.post('/video')
+  response = app.get('/video?concise')
+  data = json.loads(response.data)
+  assert data[0].keys() == ['pid', 'ma:title']
