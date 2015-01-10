@@ -1,5 +1,6 @@
 import pytest
 import json
+from ..resources import MediaAsset
 
 def test_youtube_with_bad_key(monkeypatch):
   import urllib2 
@@ -14,8 +15,6 @@ def test_youtube_with_bad_key(monkeypatch):
   assert thumbs[vid]['poster'] is None
 
 def test_limit_search(app, ACCOUNTS, monkeypatch):
-  from ..resources import MediaAsset
-
   monkeypatch.setattr(MediaAsset, 'max_search_results', 2)
 
   title = "Wolfeschlegelstein"
@@ -38,8 +37,6 @@ def test_limit_search(app, ACCOUNTS, monkeypatch):
   assert len(data) == MediaAsset.max_search_results
 
 def test_patch_video_without_good_date(app, ACCOUNTS):
-  from ..resources import MediaAsset
-
   app.login(ACCOUNTS['SUPERUSER'])
 
   title = "thing"
@@ -281,4 +278,8 @@ def test_concise_video_list(app, ACCOUNTS, ASSETS):
   r = app.post('/video')
   response = app.get('/video?concise')
   data = json.loads(response.data)
-  assert data[0].keys() == ['pid', 'ma:title']
+  keys = data[0]['@graph'].keys()
+  keys.sort()
+  expected = ['pid', 'ma:title']
+  expected.sort()
+  assert keys == expected
