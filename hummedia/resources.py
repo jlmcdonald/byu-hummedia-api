@@ -225,9 +225,13 @@ class MediaAsset(Resource):
             self.disallowed_atts.append("dc:creator")
 
     def get(self,id,limit=0):
-        if self.request.args.get("q", None) is not None:
+        if self.request.args.get("q") is not None:
             if limit is 0:
                 return super(MediaAsset, self).get(id, self.max_search_results)
+
+        if "concise" in self.request.args:
+            return super(MediaAsset, self).get(id, limit, ('@graph.pid', '@graph.ma:title'))
+
         return super(MediaAsset, self).get(id, limit)
     
     def set_query(self):
@@ -254,11 +258,15 @@ class MediaAsset(Resource):
                     q["@graph.ma:title"]=cire
                 elif k in ["ma:description","ma:hasKeyword"]:
                     q["@graph."+k]=cire
-                elif k not in ["yearfrom","yearto","ma:date","part","inhibitor"]:
+                elif k not in ["yearfrom","yearto","ma:date","part","inhibitor","concise"]:
                     q["@graph."+k]=v
         return q
         
     def get_list(self):
+        if "concise" in self.request.args:
+          self.bundle=self.auth_filter()
+          return mongo_jsonify(map(lambda x: x['@graph'], self.bundle))
+
         alist=[]
         self.bundle=self.auth_filter()
         thumbRetriever=[]

@@ -106,7 +106,7 @@ class Resource(object):
     def put(self,id):
         return self.post(id)
             
-    def get(self,id,limit=0):
+    def get(self,id,limit=0,projection=None):
         q=self.set_query()
         if id:
             try:
@@ -126,7 +126,12 @@ class Resource(object):
             else:
                 return bundle_404()
         else:
-            self.bundle=self.collection.find(q).limit(limit)
+            proj_dict = None
+
+            if projection is not None:
+              proj_dict = {x:1 for x in projection}
+
+            self.bundle=self.collection.find(q, proj_dict).limit(limit)
             return self.get_list()
 
     def delete(self,id):
