@@ -264,7 +264,8 @@ class MediaAsset(Resource):
         
     def get_list(self):
         if "concise" in self.request.args:
-          return super(MediaAsset, self).get_list()
+          self.bundle=self.auth_filter()
+          return mongo_jsonify(map(lambda x: x['@graph'], self.bundle))
 
         alist=[]
         self.bundle=self.auth_filter()

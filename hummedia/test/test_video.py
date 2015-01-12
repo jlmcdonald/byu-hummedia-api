@@ -278,7 +278,7 @@ def test_concise_video_list(app, ACCOUNTS, ASSETS):
   r = app.post('/video')
   response = app.get('/video?concise')
   data = json.loads(response.data)
-  keys = data[0]['@graph'].keys()
+  keys = data[0].keys()
   keys.sort()
   expected = ['pid', 'ma:title']
   expected.sort()
