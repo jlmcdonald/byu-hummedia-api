@@ -126,8 +126,8 @@ class IC_Client(Client):
 
         icf = {
             'video': filename + '.mp4',
-            'annotations': filename + '.json',
-            'subtitles': None if subtitle is None else filename + '.vtt'
+            'annotation': filename + '.json',
+            'subtitle': None if subtitle is None else filename + '.vtt'
         }
 
 
