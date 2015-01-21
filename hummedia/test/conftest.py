@@ -42,7 +42,7 @@ def app():
 
 def raise_(ex):
   '''
-  Helpful when monkeypatching methods that should return specific exeptions
+  Helpful when monkeypatching methods that should return specific exceptions
   '''
   raise ex
 
