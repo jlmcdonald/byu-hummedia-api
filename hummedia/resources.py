@@ -939,27 +939,41 @@ class Annotation(Resource):
         from auth import get_profile
         atts=get_profile()
 
-        pid = bundle['@graph']['pid']
-        
-        vid=assets.find_one(bundle["@graph"]["dc:relation"])
-        required = True if pid in vid["@graph"].get("ma:hasPolicy") else False
-        
-        if required and atts['role'] == 'faculty':
-            return True
-
+        collection = request.args.get('collection')
+        method = request.method
         name = atts['username']
 
-        # check to see if has write access to the collection
-        for col in vid['@graph']['ma:isMemberOf']:
-            if col['restrictor'] == pid:
-                query = ({
-                  "$or": [
-                    {"@graph.dc:rights.write": {"$elemMatch": {"username": name}}},
-                    {"@graph.dc:creator": name}
-                  ]
-                })
-                if ags.find_one(query) is not None:
-                    return True
+        if method == 'POST' and collection is not None:
+          # does the user have write access to this?
+          query = {
+            "@graph.pid": collection,
+            "$or": [
+              {"@graph.dc:rights.write": {"$in": [name] }},
+              {"@graph.dc:creator": name}
+            ]
+          }
+          print query
+          return ags.find_one(query) is not None
+        else:
+          pid = bundle['@graph']['pid']
+
+          vid=assets.find_one(bundle["@graph"]["dc:relation"])
+          required = True if pid in vid["@graph"].get("ma:hasPolicy") else False
+
+          if required and atts['role'] == 'faculty':
+              return True
+
+          # check to see if has write access to the collection
+          for col in vid['@graph']['ma:isMemberOf']:
+              if col['restrictor'] == pid:
+                  query = ({ # is this broken? Why am I not looking for the PID?
+                    "$or": [
+                      {"@graph.dc:rights.write": {"$in": [name]}},
+                      {"@graph.dc:creator": name}
+                    ]
+                  })
+                  if ags.find_one(query) is not None:
+                      return True
 
         return False
         
