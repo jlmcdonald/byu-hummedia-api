@@ -283,3 +283,12 @@ def test_concise_video_list(app, ACCOUNTS, ASSETS):
   expected = ['pid', 'ma:title']
   expected.sort()
   assert keys == expected
+
+def test_concise_video_list_as_student(app, ACCOUNTS, ASSETS):
+  app.login(ACCOUNTS['SUPERUSER'])
+  r = app.post('/video')
+  
+  app.login(ACCOUNTS['STUDENT'])
+
+  response = app.get('/video?concise')
+  assert response.status_code is 200
