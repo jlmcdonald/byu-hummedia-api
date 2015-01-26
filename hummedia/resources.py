@@ -230,7 +230,15 @@ class MediaAsset(Resource):
                 return super(MediaAsset, self).get(id, self.max_search_results)
 
         if "concise" in self.request.args:
-            return super(MediaAsset, self).get(id, limit, ('@graph.pid', '@graph.ma:title'))
+            import json
+            response = super(MediaAsset, self).get(id, limit, ('@graph.pid', '@graph.ma:title','@graph.ma:isMemberOf'))
+            data = json.loads(response.data)
+
+            for i in data:
+              del i['ma:isMemberOf'] # we only want to return the pid and title in concise mode
+
+            response.data = json.dumps(data)
+            return response
 
         return super(MediaAsset, self).get(id, limit)
     

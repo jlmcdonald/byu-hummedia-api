@@ -146,7 +146,7 @@ class Resource(object):
         if self.read_override(obj,username,role):
             return True
         if not self.override_only:
-            return any([obj["@graph"]["dc:coverage"] in allowed,username in obj["@graph"]["dc:rights"]["read"],role=="faculty",not is_nested_obj and obj["@graph"]["dc:creator"]==username])
+            return any([role=="faculty",obj["@graph"].get("dc:coverage") in allowed,username in obj["@graph"].get("dc:rights",{}).get("read",[]),not is_nested_obj and obj["@graph"].get("dc:creator")==username])
         return False
         
     def read_override(self,obj,username,role):
