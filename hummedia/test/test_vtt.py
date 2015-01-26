@@ -111,6 +111,51 @@ def test_upload_vtt(ASSETS, ACCOUNTS, app):
   orig = open(ASSETS + 'subs.vtt', 'r')
   assert orig.read() == file.read()
 
+def test_upload_vtt_as_student_with_write_access(ASSETS, ACCOUNTS, app):
+  app.login(ACCOUNTS["SUPERUSER"])
+  
+  v = app.post('/video')
+  data = json.loads(v.data)
+  vid_pid = data['pid']
+
+  c = app.post('/collection', data=json.dumps({}), headers={'Content-Type': 'application/json'})
+  data = json.loads(c.data)
+  col_pid = data['pid']
+
+  # attach video to collection
+  membership = [{"collection":{"id":col_pid,"title":"Something"},"videos":[vid_pid]}]
+  membership_result = app.post('/batch/video/membership', data=json.dumps(membership), headers={'Content-Type': "application/json"})
+  assert membership_result.status_code is 200
+
+  # now grant write access to the TA
+  patch = {"dc:rights": {"read": [ACCOUNTS['STUDENT']['username']], "write": [ACCOUNTS['STUDENT']['username']]}}
+  result = app.patch('/collection/' + col_pid, data=json.dumps(patch), headers={'Content-Type': 'application/json'})
+  assert result.status_code is 200
+  
+  app.login(ACCOUNTS['STUDENT'])
+
+  response = None
+
+  with open(ASSETS + 'subs.vtt') as f:
+    data = {
+        'subtitle': (f, 'subs.vtt'),
+        'name': "The One True Subtitle",
+        'lang': 'en'
+    }
+    response = app.patch('/video/' + vid_pid, data=data)
+  
+  assert response.status_code == 200
+  data = json.loads(response.data)
+  file = data['ma:hasRelatedResource'][0]['@id']
+  assert data['ma:hasRelatedResource'][0]['name'] == 'The One True Subtitle'
+  assert data['ma:hasRelatedResource'][0]['language'] == 'en'
+  assert file.split('.')[-1] == 'vtt'
+  filename = file.split('/')[-1]
+  
+  file = open(config.SUBTITLE_DIRECTORY + filename, 'r')
+  orig = open(ASSETS + 'subs.vtt', 'r')
+  assert orig.read() == file.read()
+
 def test_upload_invalid_vtt(ASSETS, ACCOUNTS, app):
   app.login(ACCOUNTS['SUPERUSER'])
   response = None
