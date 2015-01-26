@@ -116,11 +116,11 @@ class MediaAsset(Resource):
         from auth import get_profile
         atts=get_profile()
 
-        if not atts['superuser']:
-            return action_401()
-
         if self.request.json is None or 'replacement_file' not in self.request.json:
             return super(MediaAsset, self).patch(id)
+
+        if not atts['superuser']:
+            return action_401()
 
         found = assets.find_one({'_id': id})
 
