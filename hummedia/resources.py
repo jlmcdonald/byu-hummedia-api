@@ -960,7 +960,6 @@ class Annotation(Resource):
               {"@graph.dc:creator": name}
             ]
           }
-          print query
           return ags.find_one(query) is not None
         else:
           pid = bundle['@graph']['pid']
@@ -973,15 +972,15 @@ class Annotation(Resource):
 
           # check to see if has write access to the collection
           for col in vid['@graph']['ma:isMemberOf']:
-              if col['restrictor'] == pid:
-                  query = ({ # is this broken? Why am I not looking for the PID?
-                    "$or": [
-                      {"@graph.dc:rights.write": {"$in": [name]}},
-                      {"@graph.dc:creator": name}
-                    ]
-                  })
-                  if ags.find_one(query) is not None:
-                      return True
+              query = {
+                "@graph.pid": col['@id'],
+                "$or": [
+                  {"@graph.dc:rights.write": {"$in": [name] }},
+                  {"@graph.dc:creator": name}
+                ]
+              }
+              if ags.find_one(query) is not None:
+                  return True
 
         return False
         
