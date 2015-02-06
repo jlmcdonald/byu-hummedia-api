@@ -101,6 +101,37 @@ def test_collection_write_access_ta_can_annotate(app, ACCOUNTS):
 
   assert col_based_patch.status_code is 200, "TA with write access could not modify collection-based annotations. Status: %d" % col_based_patch.status_code
 
+def test_collection_write_access_ta_can_add_required_annotations(app, ACCOUNTS):
+  ''' If we create a collection as a superuser and then
+      give a student write access to the collection it belongs to,
+      then that person should have write access to the annotations as well. '''
+
+  app.login(ACCOUNTS['SUPERUSER'])
+  
+  v = app.post('/video')
+  data = json.loads(v.data)
+  vid_pid = data['pid']
+
+  c = app.post('/collection', data=json.dumps({}), headers={'Content-Type': 'application/json'})
+  data = json.loads(c.data)
+  col_pid = data['pid']
+
+  # attach video to collection
+  membership = [{"collection":{"id":col_pid,"title":"Something"},"videos":[vid_pid]}]
+  membership_result = app.post('/batch/video/membership', data=json.dumps(membership), headers={'Content-Type': "application/json"})
+  assert membership_result.status_code is 200
+
+  # now grant write access to the TA
+  patch = {"dc:rights": {"read": [ACCOUNTS['STUDENT']['username']], "write": [ACCOUNTS['STUDENT']['username']]}}
+  result = app.patch('/collection/' + col_pid, data=json.dumps(patch), headers={'Content-Type': 'application/json'})
+  assert result.status_code is 200
+  
+  app.login(ACCOUNTS['STUDENT'])
+
+  required = {"media":[{"id":vid_pid,"name":"Media0","url":["https://milo.byu.edu///movies/50aba99cbe3e2dadd67872da44b0da94/54131f93/0033467.mp4","https://milo.byu.edu///movies/b4861e89ca5c8adf5ae37281743206cd/54131f93/0033467.webm"],"target":"hum-video","duration":300.011,"popcornOptions":{"frameAnimation":True},"controls":False,"tracks":[{"name":"Layer 0","id":"0","trackEvents":[]}],"clipData":{}}]}
+  req_result = app.post('/annotation?client=popcorn', data=json.dumps(required), headers={'Content-Type': 'application/json'})
+  assert req_result.status_code is 200, "Superuser could not create required annotation"
+
 def test_collection_write_access_ta_can_patch_superusers_edit(app, ACCOUNTS):
   app.login(ACCOUNTS['SUPERUSER'])
   
