@@ -951,25 +951,7 @@ class Annotation(Resource):
         method = request.method
         name = atts['username']
 
-        if method == 'POST' and collection is not None:
-          # does the user have write access to this?
-          query = {
-            "@graph.pid": collection,
-            "$or": [
-              {"@graph.dc:rights.write": {"$in": [name] }},
-              {"@graph.dc:creator": name}
-            ]
-          }
-          return ags.find_one(query) is not None
-        else:
-          pid = bundle['@graph']['pid']
-
-          vid=assets.find_one(bundle["@graph"]["dc:relation"])
-          required = True if pid in vid["@graph"].get("ma:hasPolicy") else False
-
-          if required and atts['role'] == 'faculty':
-              return True
-
+        def can_write_to_vid(vid, name):
           # check to see if has write access to the collection
           for col in vid['@graph']['ma:isMemberOf']:
               query = {
@@ -982,7 +964,32 @@ class Annotation(Resource):
               if ags.find_one(query) is not None:
                   return True
 
-        return False
+          return False
+
+        if method == 'POST':
+          if collection is not None:
+            # does the user have write access to this?
+            query = {
+              "@graph.pid": collection,
+              "$or": [
+                {"@graph.dc:rights.write": {"$in": [name] }},
+                {"@graph.dc:creator": name}
+              ]
+            }
+            return ags.find_one(query) is not None
+          else:
+            vid_id = json.loads(request.data)['media'][0]['id']
+            return can_write_to_vid(assets.find_one(vid_id), name)
+            
+        pid = bundle['@graph']['pid']
+
+        vid=assets.find_one(bundle["@graph"]["dc:relation"])
+        required = True if pid in vid["@graph"].get("ma:hasPolicy") else False
+
+        if required and atts['role'] == 'faculty':
+            return True
+
+        return can_write_to_vid(vid, name)
         
     def set_disallowed_atts(self):
         from auth import get_profile
