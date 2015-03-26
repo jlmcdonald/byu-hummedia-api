@@ -125,18 +125,18 @@ class IC_Client(Client):
             subtitle = None
 
         icf = {
-            'video': filename + '.mp4',
-            'annotation': filename + '.json',
-            'subtitle': None if subtitle is None else filename + '.vtt'
+            'video': filename + '_IC.mp4',
+            'annotation': filename + '_IC.json',
+            'subtitle': None if subtitle is None else filename + '_IC.vtt'
         }
 
 
         zipholder = tempfile.NamedTemporaryFile()
         z = ZipFile(zipholder, 'w')
-        z.writestr(filename + '.json', json.dumps(annotations))
-        z.writestr(filename + '.icf', json.dumps(icf))
+        z.writestr(filename + '_IC.json', json.dumps(annotations))
+        z.writestr(filename + '_IC.icf', json.dumps(icf))
         if subtitle is not None:
-            z.write(subtitle, filename + '.vtt')
+            z.write(subtitle, filename + '_IC.vtt')
 
         z.close()
 
@@ -144,7 +144,7 @@ class IC_Client(Client):
             zipholder.name,
             mimetype='application/zip',
             as_attachment=True,
-            attachment_filename=media['ma:title'] + '.zip'
+            attachment_filename=filename + '_IC.zip'
         )
 
 lookup={"popcorn": Popcorn_Client, "ic": IC_Client}
