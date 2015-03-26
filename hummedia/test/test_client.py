@@ -1,9 +1,10 @@
+# -*- coding: utf-8 -*-
 from zipfile import ZipFile
 from StringIO import StringIO
 import json
 
-def create_video_in_collection(app):
-  v = app.post('/video')
+def create_video_in_collection(app, title='Hummedia Video'):
+  v = app.post('/video', data=json.dumps({'ma:title': title}), headers={'Content-Type': 'application/json'})
   data = json.loads(v.data)
   vid_pid = data['pid']
 
@@ -87,3 +88,9 @@ def test_download_ic_file_subs_only(app, ACCOUNTS, ASSETS):
 
   assert len(filter(lambda fname: fname.endswith('.vtt'), items)) is 1, 'No subtitle in archive'
   assert len(filter(lambda fname: fname.endswith('.icf'), items)) is 1, 'No ICF file in archive'
+
+def test_download_ic_file_non_ascii_characters(app, ACCOUNTS):
+  app.login(ACCOUNTS['SUPERUSER'])
+  vid_pid, col_pid = create_video_in_collection(app, u'ümläüẗs ärë ſüpër ﬀun')
+  annotation_result = app.get('/annotation?client=ic&collection=' + col_pid + '&dc:relation=' + vid_pid)
+  assert annotation_result.status_code is 200
