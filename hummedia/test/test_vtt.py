@@ -33,7 +33,7 @@ def test_from_srt_file_tricky_decoding(ASSETS):
   i = open(ASSETS + 'tricky-decoding.srt')
   o = io.BytesIO()
   try:
-    vtt.from_srt(i, o)
+    vtt.from_srt(i, o) # TODO: compare output with known data
   except UnicodeDecodeError:
     assert False, "Could not accurately decode srt file."
 
