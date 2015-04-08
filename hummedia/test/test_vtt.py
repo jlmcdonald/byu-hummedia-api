@@ -29,6 +29,14 @@ def test_from_srt_file(ASSETS):
   w = compare.read().decode('utf8')
   assert v == w
 
+def test_from_srt_file_tricky_decoding(ASSETS):
+  i = open(ASSETS + 'tricky-decoding.srt')
+  o = io.BytesIO()
+  try:
+    vtt.from_srt(i, o)
+  except UnicodeDecodeError:
+    assert False, "Could not accurately decode srt file."
+
 def test_from_bad_srt(ASSETS):
   i = open(ASSETS + 'fake.srt')
   o = io.BytesIO()
