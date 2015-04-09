@@ -840,6 +840,14 @@ class AssetGroup(Resource):
 def videoMembershipBatch():
     status={}
     packet=request.json
+
+    # ensure the user has write access to the collection
+    for up in packet:
+        bundle = ags.find_one({'_id': str(up['collection']['id'])})
+        group = AssetGroup(request=request)
+        if not group.acl_write_check(bundle):
+            return action_401()
+
     for up in packet:
         status[up['collection']['id']]=assets.update({'@graph.pid':{'$in':up['videos']}}, {'$addToSet':{"@graph.ma:isMemberOf":{'@id':up['collection']['id'],'title':up['collection']['id']}}},multi=True)
     return jsonify(status)
