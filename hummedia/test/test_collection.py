@@ -46,6 +46,7 @@ def test_write_access_of_collection_can_add_videos(app, ACCOUNTS):
   patch_data = {'dc:rights': {'read': [user], 'write': [user]}}
   col_pid = c_data['pid']
   r = app.patch('/collection/' + col_pid, data=json.dumps(patch_data), headers={'Content-Type': 'application/json'})
+  assert r.status_code == 200
   
   app.login(ACCOUNTS['STUDENT'])
   vid_data =  json.loads(v.data)
@@ -72,7 +73,7 @@ def test_student_no_write_access_of_collection_cannot_add_videos(app, ACCOUNTS):
   
   membership = [{"collection":{"id":col_pid,"title":"Something"},"videos":[vid_pid]}]
   membership_result = app.post('/batch/video/membership', data=json.dumps(membership), headers={'Content-Type': "application/json"})
-  assert membership_result.status_code is 401
+  assert membership_result.status_code == 401
 
   app.login(ACCOUNTS['SUPERUSER'])
   new_c = app.get('/collection/' + col_pid + '?full=true')
