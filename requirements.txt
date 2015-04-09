@@ -1,5 +1,6 @@
 flask
 flask_oauth
+pymongo>2.7,<3.0
 mongokit
 byu_ws_sdk
 lxml
