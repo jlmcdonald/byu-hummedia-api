@@ -55,17 +55,31 @@ def from_srt(input_f, output_f):
   with vtt_open(input_f, 'r') as f:
     orig = f.read()
 
-    # caption converter seems to have a tough time with the BOM on
-    # Python < 2.7.8, so ditch it if it exists.
-    orig = orig[3:] if orig[:3] == codecs.BOM_UTF8 else orig
     detect = chardet.detect(orig)
     encoding = detect['encoding']
     confidence = detect['confidence']
+    default_subrip_encoding = 'cp1252' # standard for SubRip files
 
     if confidence < 0.9:
-      encoding = 'cp1252' # standard for SubRip files
+      encoding = default_subrip_encoding
 
-    contents = orig.decode(encoding)
+    backups = [default_subrip_encoding,'utf8']
+
+    while True:
+      try:
+        print "ENCODING: " + encoding
+        contents = orig.decode(encoding)
+        break
+      except UnicodeDecodeError as e:
+        if len(backups) is 0:
+          raise
+          break
+        encoding = backups.pop(0)
+
+
+    # caption converter seems to have a tough time with the BOM on
+    # Python < 2.7.8, so ditch it if it exists.
+    contents = contents[3:] if contents[:3] == codecs.BOM_UTF8 else contents
 
   converter = CaptionConverter()
   converter.read(contents, SRTReader())
