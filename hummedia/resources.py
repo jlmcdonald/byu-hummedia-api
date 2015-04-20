@@ -142,7 +142,10 @@ class MediaAsset(Resource):
 
         from os import remove
         for f in to_delete:
-            remove(f)
+            try:
+              remove(f)
+            except OSError:
+              pass
 
         assets.update({'_id': id}, {'$set': {'@graph.ma:locator': []}})
 
@@ -166,9 +169,8 @@ class MediaAsset(Resource):
         i = up['id']
         dupe = assets.find_one({'@graph.ma:locator': {'$elemMatch': {'@id': i}}})
         mp4 = (unicode(config.MEDIA_DIRECTORY) + i + '.mp4').encode('utf-8')
-        webm = (unicode(config.MEDIA_DIRECTORY) + i + '.webm').encode('utf-8')
 
-        if path.isfile(webm) or path.isfile(mp4) or dupe is not None:
+        if path.isfile(mp4) or dupe is not None:
             return (False, "That file (%s) already exists; try another unique ID." %i)
 
         filepath=unicode(config.INGEST_DIRECTORY + up['filepath'])
@@ -189,11 +191,6 @@ class MediaAsset(Resource):
                     "@id": up["id"],
                     "ma:hasFormat": "video/mp4",
                     "ma:hasCompression": {"@id":"http://www.freebase.com/view/en/h_264_mpeg_4_avc","name": "avc.42E01E"}
-                },
-                {
-                    "@id": up["id"],
-                    "ma:hasFormat": "video/webm",
-                    "ma:hasCompression": {"@id":"http://www.freebase.com/m/0c02yk5","name":"vp8.0"}
                 }
             ]
         }})
@@ -204,16 +201,6 @@ class MediaAsset(Resource):
         im.thumbnail((160,90))
         im.save(thumb)
         chmod(thumb,0775)
-
-        if not app.config.get('TESTING'):
-            from gearman import GearmanClient
-            client = GearmanClient(config.GEARMAN_SERVERS)
-            client.submit_job("generate_webm", str(up["id"]))
-        else:
-            from ingest import generate_webm
-            result = generate_webm(file_id=up['id'])
-            if result == "ERROR":
-                raise Exception("Could not convert media file.")
 
         return (True,)
     
@@ -496,8 +483,6 @@ class MediaAsset(Resource):
                         loc={"@id":file,"ma:hasFormat":"video/"+ext}
                         if ext=="mp4":
                             loc["ma:hasCompression"]={"@id":"http://www.freebase.com/view/en/h_264_mpeg_4_avc","name": "avc.42E01E"}
-                        elif ext=="webm":
-                            loc["ma:hasCompression"]={"@id":"http://www.freebase.com/m/0c02yk5","name":"vp8.0"}
 			if loc not in self.bundle["@graph"]["ma:locator"]:
 	                        self.bundle["@graph"]["ma:locator"].append(loc)
     	return ({"resp":200})
@@ -556,7 +541,7 @@ class MediaAsset(Resource):
                     filename = "{0}.{1}".format(basename, extension)
                     try:
                         remove(config.MEDIA_DIRECTORY + filename)
-                    except IOError:
+                    except (IOError, OSError):
                         pass
                 return result
         else:
@@ -687,8 +672,7 @@ def videoCreationBatch():
             i = up['id']
             dupe = assets.find_one({'@graph.ma:locator': {'$elemMatch': {'@id': i}}})
             mp4 = (unicode(config.MEDIA_DIRECTORY) + i + '.mp4').encode('utf-8')
-            webm = (unicode(config.MEDIA_DIRECTORY) + i + '.webm').encode('utf-8')
-            if path.isfile(mp4) or path.isfile(webm) or dupe is not None:
+            if path.isfile(mp4) or dupe is not None:
                 return bundle_400("That file (%s) already exists; try another unique ID." %i)
 
         for up in packet:

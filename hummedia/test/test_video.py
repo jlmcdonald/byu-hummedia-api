@@ -97,7 +97,7 @@ def test_ingest(app, ACCOUNTS, ASSETS):
   vid_response = app.get('/video/' + pid)
   vid = json.loads(vid_response.data)
 
-  assert len(vid['url']) is 2
+  assert len(vid['url']) is 1
 
   for v in vid['url']:
     filename = v.split('/')[-1]
