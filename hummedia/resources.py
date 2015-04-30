@@ -367,8 +367,13 @@ class MediaAsset(Resource):
         ytThumbs=getYtThumbs(fromYt)
         for image in payload["@graph"]["ma:image"]:
             if image.get("ytId"):
-                image["thumb"] = ytThumbs[image["ytId"]]["thumb"]
-                image["poster"] = ytThumbs[image["ytId"]]["poster"]
+                try:
+                    image["thumb"] = ytThumbs[image["ytId"]]["thumb"]
+                    image["poster"] = ytThumbs[image["ytId"]]["poster"]
+                except KeyError:
+                    image["thumb"] = None
+                    image["poster"] = None
+                
                 image.pop("ytId",None)
         for annot in payload["@graph"]["ma:isMemberOf"]:
             coll=ags.find_one({"_id":annot["@id"]})
@@ -788,8 +793,12 @@ class AssetGroup(Resource):
             for vid in payload["@graph"]["videos"]:
                 for image in vid["ma:image"]:
                     if image.get("ytId"):
-                        image["thumb"] = ytThumbs[image["ytId"]]["thumb"]
-                        image["poster"] = ytThumbs[image["ytId"]]["poster"]
+			try:
+			    image["thumb"] = ytThumbs[image["ytId"]]["thumb"]
+			    image["poster"] = ytThumbs[image["ytId"]]["poster"]
+			except KeyError:
+			    image["thumb"] = None
+			    image["poster"] = None
                         image.pop("ytId",None)
             return mongo_jsonify(payload["@graph"])
         else:
