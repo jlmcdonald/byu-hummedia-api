@@ -49,6 +49,8 @@ def get_redirect_url():
   
 def set_session_vars(user):
     for att in ('username','userid','role','superuser','fullname','preferredLanguage','ta'):
+	if session['fromhlr']:
+	    att['superuser']=True
         if att in user:
             session[att]=user[att]
 
@@ -140,6 +142,7 @@ def enrollmentTest():
 @crossdomain(origin=config.CROSS_DOMAIN_HOSTS,headers=['Origin','x-requested-with','accept','Content-Type', 'Authorization'],credentials=True)
 def apiLogin(providerService="cas",proxyUser=None):
     session["redirect"]=request.args.get("r",session.get("redirect"))
+    session["fromhlr"]=request.args.get("fromhlr",session.get("fromhlr"))
     if get_user() and request.args.get("connect") is None:
         return auth_redirect()
     if providerService == "google":

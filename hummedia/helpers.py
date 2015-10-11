@@ -385,9 +385,9 @@ def getCurrentSem():
     today=datetime.now()
     sem="1"
     if today.month in [5,6]:
-        sem="3"
+        sem="4" if today.day > 22 else "3"
     elif today.month in [7,8]:
-        sem="4"
+        sem="5" if today.day > 15 else "4"
     elif today.month in [9,10,11,12]:
         sem="5"
     return str(today.year)+sem
